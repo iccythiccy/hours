@@ -288,3 +288,81 @@ test("day deleted after sending but before tapping Sent: client still has it, so
   assert.equal(e[MON].removed, true);
   assert.equal(compose(e, MON).text, "Correction: 11/9 removed\n0min total for the week.");
 });
+
+// ---------- travel days and other unusual hours ----------
+test("travel day 4am-1am: 21hrs, dated by its start, needs a one-tap confirm", () => {
+  const t = W("04:00", "01:00");
+  assert.equal(H.worked(t), 21 * 60);
+  const v = H.validate(t, {});
+  assert.deepEqual(v.blockers, []);
+  assert.equal(v.needsAck, true);
+  const r = H.compose({}, TUE, t, S);
+  assert.equal(r.text, "11/10 4am-1am 21hrs 0min\n21hrs 0min total for the week.");
+});
+
+test("travel day ending exactly at midnight", () => {
+  const t = W("04:00", "00:00");
+  assert.equal(H.worked(t), 20 * 60);
+  assert.equal(H.dayLine(TUE, t, S), "11/10 4am-12am 20hrs 0min");
+});
+
+test("travel day ending at 12:30am and 3am", () => {
+  assert.equal(H.dayLine(TUE, W("04:00", "00:30"), S), "11/10 4am-12:30am 20hrs 30min");
+  assert.equal(H.dayLine(TUE, W("04:00", "03:00"), S), "11/10 4am-3am 23hrs 0min");
+});
+
+test("break spanning midnight on a travel day", () => {
+  const t = W("04:00", "01:00", [["23:30", "00:15"]]);
+  assert.deepEqual(H.validate(t, {}).blockers, []);
+  assert.equal(H.worked(t), 21 * 60 - 45);
+  assert.equal(H.dayLine(TUE, t, S), "11/10 4am-1am (11:30pm-12:15am break) 20hrs 15min");
+});
+
+test("breaks before and after midnight; a break after the day ends is blocked", () => {
+  const ok = W("04:00", "01:00", [["12:00", "12:30"], ["00:20", "00:40"]]);
+  assert.deepEqual(H.validate(ok, {}).blockers, []);
+  assert.equal(H.dayLine(TUE, ok, S), "11/10 4am-1am (12pm-12:30pm, 12:20am-12:40am breaks) 20hrs 10min");
+  const bad = W("04:00", "01:00", [["01:30", "02:00"]]);
+  assert.match(H.validate(bad, {}).blockers.join(), /inside your work hours/);
+  const early = W("04:00", "01:00", [["03:30", "03:45"]]);    // before the 4am start
+  assert.match(H.validate(early, {}).blockers.join(), /inside your work hours/);
+});
+
+test("back-to-back travel days add up and don't overlap", () => {
+  const e = { [MON]: W("04:00", "01:00"), [TUE]: W("04:00", "01:00") };
+  assert.equal(H.weekTotal(e, TUE), 42 * 60);
+  assert.deepEqual(H.validate(e[TUE], { entries: e, date: TUE }).blockers, []);
+  assert.deepEqual(H.validate(e[MON], { entries: e, date: MON }).blockers, []);
+  const r = H.compose({ [MON]: e[MON] }, TUE, e[TUE], S);
+  assert.equal(r.text, "11/10 4am-1am 21hrs 0min\n42hrs 0min total for the week.");
+});
+
+test("a day running into the next day's start is blocked (would double-count)", () => {
+  const e = { [MON]: W("06:00", "05:00"), [TUE]: W("04:00", "18:00") };   // Mon runs to 5am Tue
+  assert.match(H.validate(e[TUE], { entries: e, date: TUE }).blockers.join(), /overlaps/);
+  assert.match(H.validate(e[MON], { entries: e, date: MON }).blockers.join(), /overlaps/);
+  e[MON] = W("04:00", "04:00");                                            // 24h days aren't allowed anyway
+  e[MON] = W("06:00", "03:59");                                            // ends just before Tue's 4am start
+  assert.deepEqual(H.validate(e[TUE], { entries: e, date: TUE }).blockers, []);
+});
+
+test("Sunday travel day ending Monday 1am counts in Sunday's week", () => {
+  const e = { [SUN]: W("04:00", "01:00") };
+  assert.equal(H.weekTotal(e, SUN), 21 * 60);
+  const r = H.compose(e, NEXT_MON, W("09:00", "17:00"), S);
+  assert.equal(r.text, "11/16 9am-5pm 8hrs 0min\n8hrs 0min total for the week.");
+});
+
+test("correcting a travel day after it was sent", () => {
+  const e = {};
+  send(e, TUE, W("04:00", "01:00"));
+  e[TUE] = Object.assign(W("04:00", "01:30"), { sent: e[TUE].sent });
+  assert.equal(compose(e, TUE).text, "Correction: 11/10 4am-1:30am 21hrs 30min\n21hrs 30min total for the week.");
+});
+
+test("odd clock times: 12am/12pm, starting after midnight, 1-minute days", () => {
+  assert.equal(H.dayLine(TUE, W("00:30", "12:00"), S), "11/10 12:30am-12pm 11hrs 30min");
+  assert.equal(H.dayLine(TUE, W("12:00", "12:01"), S), "11/10 12pm-12:01pm 1min");
+  assert.equal(H.validate(W("00:30", "12:00"), {}).needsAck, false);
+  assert.equal(H.worked(W("23:59", "00:00")), 1);
+});

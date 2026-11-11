@@ -34,7 +34,8 @@ On Android: open in Chrome, then **⋮ → Add to Home screen**.
 | Weekly total | Adds up Mon–Sun and resets every Monday. |
 | Missed days | Weekdays with nothing logged show orange "Not logged" until you log them or mark them as a day off. |
 | Blocked until fixed | Text and Copy stay off while: the end time is still the app's guess (tap **Now** or set it), a break has placeholder times, a break falls outside work hours, breaks overlap, or start and end are the same. |
-| One-tap confirm | An overnight shift or a day over 13 hours is allowed after **Yes, that's right**. |
+| One-tap confirm | An overnight shift or a day over 13 hours (e.g. a 4am–1am travel day = `21hrs 0min`) is allowed after **Yes, that's right**. |
+| Past midnight | A day that ends after midnight stays on the day it started. Clock in at 4am and reopen at 1am: the app opens that day (until noon) with the end time set to now. A day running into the next day's start is blocked so no hours are counted twice. |
 | Sent tracking | ✓ = sent (confirmed). ● = changed since sent. **Mark as not sent** undoes a wrong confirmation. |
 | Corrections | If you change a day you already sent, the next text adds a `Correction:` line. If you've already sent today, **Text fix** sends a correction with the updated week total. A day logged after a later day was sent goes out as a correction too. Corrections compare the actual hours, not the wording, so changing settings never triggers one. |
 | Deleting a sent day | Kept as "Removed · not sent yet" until you send `Correction: 11/9 removed`, so your client is never left with hours that no longer exist. **Bring this day back** restores it. |
@@ -64,11 +65,11 @@ Everything is stored **on the phone**, inside the home-screen app (browser local
 Run both before every push; don't push if either fails.
 
 ```
-node --test tests/core.test.js      # 27 work-week scenarios against core.js (Node 18+)
+node --test tests/core.test.js      # 37 work-week scenarios against core.js (Node 18+)
 python3 tests/ui_test.py            # taps through the real screen in headless Chrome (needs playwright)
 ```
 
-Covered: exact format, breaks, overnight shifts, week boundaries, blockers and confirms, nothing counting as sent until confirmed, corrections before/after the day's text, late-added and skipped days, deleting sent and unsent days, day off, settings changes not causing false corrections, migration of older saves, backup round trip.
+Covered: exact format, breaks, overnight shifts and 4am–1am travel days (breaks across midnight, 12am/12pm, back-to-back days, overlapping days, Sunday into Monday, clocking out after midnight), week boundaries, blockers and confirms, nothing counting as sent until confirmed, corrections before/after the day's text, late-added and skipped days, deleting sent and unsent days, day off, settings changes not causing false corrections, migration of older saves, backup round trip.
 - Changing the icon: replace `icon-180/192/512.png` and bump the `?v=` on the icon links. iPhones only pick up a new icon when the app is removed and added to the home screen again.
 
 ## Decisions

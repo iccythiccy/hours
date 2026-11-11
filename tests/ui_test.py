@@ -27,13 +27,15 @@ class App:
         await ctx.grant_permissions(["clipboard-read", "clipboard-write"])
         init = (f"const _D=Date; const f=new _D({y},{mo-1},{d},{h},{mi}).getTime();"
                 "Date=class extends _D{constructor(...a){super(...(a.length?a:[f]))} static now(){return f}};")
-        if storage is not None:
-            init += f"if(!sessionStorage.getItem('seeded')){{localStorage.setItem('hours.v1', {json.dumps(json.dumps(storage))});sessionStorage.setItem('seeded','1')}}"
         await ctx.add_init_script(init)
         self.pg = await ctx.new_page()
         self.errors = []
         self.pg.on("pageerror", lambda e: self.errors.append(str(e)))
         await self.pg.goto(URL)
+        if storage is not None:   # seed saved data once, then load the app fresh on top of it
+            await self.pg.evaluate("s => { localStorage.clear(); localStorage.setItem('hours.v1', s); }", json.dumps(storage))
+            await self.pg.reload()
+        await self.pg.wait_for_function("()=>window.__hours")
         return self
     async def state(self): return json.loads(await self.pg.evaluate("()=>localStorage.getItem('hours.v1')"))
     async def close(self):
@@ -66,7 +68,6 @@ async def main():
         st = await a.state()
         check("sent" not in st["entries"]["2026-11-09"], "not marked sent yet")
         await a.pg.reload(); await a.pg.wait_for_function("()=>window.__hours")
-        await a.pg.wait_for_timeout(300)
         check(await a.visible("sentBar"), "question survives closing/reopening the app")
         await a.pg.click("#notSentBtn")
         check(not await a.visible("sentBar"), "Not sent dismisses")
@@ -144,6 +145,43 @@ async def main():
         await a.set("start", "09:00"); await a.set("end", "17:00")
         check(await a.txt("msg") == "11/11 9am-5pm 8hrs 0min\n27hrs 15min total for the week.", "normal Wednesday text")
         await a.close()
+        print("Travel day: clock in 4am, clock out 1am the next morning")
+        base = {"entries": {}, "settings": {"name": "Mike", "phone": "9415550123", "showBrk": True}}
+        a = await App(p).open(2026, 11, 10, 4, 0, base)
+        await a.pg.click("#startNow")
+        check(await a.txt("status") == "Started 4am", "clocked in at 4am")
+        st = await a.state(); await a.close()
+        a = await App(p).open(2026, 11, 11, 1, 0, st)               # reopened at 1am Wednesday
+        check(await a.pg.evaluate("()=>window.__hours.cur") == "2026-11-10", "opens Tuesday, not Wednesday")
+        check(await a.txt("status") == "Started 4am · not finished", "shows the open clock-in")
+        check(await a.txt("endVal") == "1am", "end time defaults to now (1am)")
+        await a.pg.click("#endNow")
+        check(await a.visible("ack") and await a.disabled(), "past-midnight day asks for a confirm")
+        check("21hrs 0min" in await a.txt("ackTxt"), "confirm shows 21hrs")
+        await a.pg.click("#ackBtn")
+        check(await a.txt("msg") == "11/10 4am-1am 21hrs 0min\n21hrs 0min total for the week.", "travel-day text")
+        await a.tap_text(); await a.pg.click("#sentBtn")
+        check(await a.txt("status") == "✓ Sent", "sent")
+        await a.shot("6-travel-day")
+
+        print("Next travel day starts 4am Wednesday: no overlap, totals add")
+        await a.pg.evaluate("()=>window.__hours.loadDate('2026-11-11')")
+        await a.set("start", "04:00"); await a.set("end", "01:00"); await a.pg.click("#ackBtn")
+        check(await a.txt("msg") == "11/11 4am-1am 21hrs 0min\n42hrs 0min total for the week.", "second travel day adds to 42hrs")
+        print("Overlap between days is blocked")
+        await a.set("start", "00:30")                                 # Wed starting 12:30am overlaps Tue ending 1am
+        check(await a.disabled() and "overlaps" in await a.txt("warn"), "overlap blocks texting")
+        await a.shot("7-overlap")
+        await a.close()
+
+        print("Unfinished clock-in from yesterday stays put after noon")
+        a = await App(p).open(2026, 11, 10, 4, 0, base)
+        await a.pg.click("#startNow"); st = await a.state(); await a.close()
+        a = await App(p).open(2026, 11, 11, 14, 0, st)
+        check(await a.pg.evaluate("()=>window.__hours.cur") == "2026-11-11", "after noon, opens today")
+        check("Started 4am" in await a.txt("weekList"), "yesterday's open clock-in still visible in the week")
+        await a.close()
+
     print(f"\n{'ALL PASSED' if not failures else str(len(failures)) + ' FAILED'}")
     sys.exit(1 if failures else 0)
 

@@ -1,4 +1,4 @@
-const CACHE = "hours-v9";
+const CACHE = "hours-v10";
 const FILES = ["./", "index.html", "core.js", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {

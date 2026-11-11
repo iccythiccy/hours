@@ -128,12 +128,30 @@
       for (let i = 0; i < bs.length - 1; i++)
         if (rel(bs[i].e) > rel(bs[i + 1].s)) { blockers.push("Your breaks overlap. Check the break times."); break; }
     }
+    if (ui.entries && ui.date) blockers.push(...neighborOverlaps(ui.entries, ui.date, en));
     const w = worked(en);
     if (crossesMidnight(en)) confirms.push(`End is earlier than start, so this counts as working past midnight (${fmtDur(w)}).`);
     else if (w > LONG_DAY) confirms.push(`That's ${fmtDur(w)} in one day.`);
     return { blockers, confirms, needsAck: confirms.length > 0 && ui.ack !== ackKey(en) };
   }
   H.validate = validate;
+
+  // A shift that runs past midnight must end before the next day's shift starts (and vice versa),
+  // otherwise the same hours are counted twice.
+  function neighborOverlaps(entries, d, en) {
+    const out = [];
+    if (!isWork(en) || !TIME_RE.test(en.start) || !TIME_RE.test(en.end)) return out;
+    const sMin = toMin(en.start), eMin = sMin + between(en.start, en.end);   // minutes from d's midnight
+    const next = entries[addDays(d, 1)], prev = entries[addDays(d, -1)];
+    if (isWork(next) && TIME_RE.test(next.start) && eMin > 1440 + toMin(next.start))
+      out.push(`This day runs to ${fmtTime(en.end)} on ${md(addDays(d, 1))}, which overlaps that day's ${fmtTime(next.start)} start. Fix one of the two days.`);
+    if (isWork(prev) && TIME_RE.test(prev.start) && TIME_RE.test(prev.end)) {
+      const pEnd = toMin(prev.start) + between(prev.start, prev.end) - 1440;
+      if (pEnd > sMin) out.push(`${md(addDays(d, -1))} runs to ${fmtTime(prev.end)} this morning, which overlaps this day's ${fmtTime(en.start)} start. Fix one of the two days.`);
+    }
+    return out;
+  }
+  H.neighborOverlaps = neighborOverlaps;
 
   // ---------- composing the text ----------
   // entries: saved entries. cur: the day on screen. form: the day as shown (work / {off} / {removed}).

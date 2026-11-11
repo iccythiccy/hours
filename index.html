@@ -297,7 +297,7 @@
   const C = window.HoursCore;
   const $ = id => document.getElementById(id);
   const KEY = "hours.v1";
-  const VERSION = "9", UPDATED = "Nov 11, 2026";
+  const VERSION = "10", UPDATED = "Nov 11, 2026";
   const { fmtTime, fmtDur, md, iso, parseIso, addDays, weekDates, monday, between, TIME_RE, validBreak, entryBreaks, worked } = C;
 
   // ---------- storage (local to this phone) ----------
@@ -353,7 +353,8 @@
   }
   const complete = e => !C.isWork(e) || (TIME_RE.test(e.start) && TIME_RE.test(e.end) && (!e.breaks || e.breaks.every(validBreak)));
   const sameEntry = (a,b) => !!(a && b) && C.sameSnap(C.snap(a), C.snap(b));
-  const uiFlags = () => ({ endUnconfirmed: endIsDefault, breakPlaceholders: brks.some(b => b.sDef || b.eDef), ack: state.acks[cur] });
+  const uiFlags = () => ({ endUnconfirmed: endIsDefault, breakPlaceholders: brks.some(b => b.sDef || b.eDef), ack: state.acks[cur],
+                         entries: state.entries, date: cur });
 
   // ---------- break tiles (built only when breaks are added/removed, so an open wheel is never rebuilt) ----------
   function buildBreaks(){
@@ -413,7 +414,7 @@
     } else if (!e) {
       const last = lastEntry(), draft = state.drafts[s];
       $("start").value = draft ? draft.start : (last ? last.start : "09:00");
-      $("end").value = (s === today) ? nowExact() : (last ? last.end : "17:00");
+      $("end").value = (s === today || draft) ? nowExact() : (last ? last.end : "17:00");
       endIsDefault = true;
       setBreaks(draft && draft.breaks ? draft.breaks : [], false);
     } else {
@@ -541,7 +542,7 @@
       if (ss === "ok") { st = "✓ Sent"; cls = " ok"; }
       else if (ss === "stale") { st = "Changed since sent"; cls = " warnc"; }
       else st = off ? "Day off" : "Logged · not sent";
-    } else if (!sv && draft && cur === today) st = `Started ${fmtTime(draft.start)}`;
+    } else if (!sv && draft) st = `Started ${fmtTime(draft.start)}${cur < today ? " · not finished" : ""}`;
     $("status").textContent = st;
     $("status").className = "status" + cls;
 
@@ -551,7 +552,10 @@
     const warns = [];
     v.blockers.forEach(b => warns.push(`<div class="blk">⛔ ${b}</div>`));
     const miss = missingDays(cur);
-    if (miss.length) warns.push(`<div>⚠︎ Nothing logged for ${list(miss.map(dayName))}. Log the hours or mark ${miss.length > 1 ? "them as days" : "it as a day"} off. The week total doesn't include ${miss.length > 1 ? "those days" : "that day"}.</div>`);
+    const unfinished = miss.filter(x => state.drafts[x]);
+    if (unfinished.length) warns.push(`<div>⚠︎ ${list(unfinished.map(x => `${dayName(x)} (started ${fmtTime(state.drafts[x].start)})`))} ${unfinished.length > 1 ? "were" : "was"} never finished. Open ${unfinished.length > 1 ? "them" : "it"} and set the end time.</div>`);
+    const missOnly = miss.filter(x => !state.drafts[x]);
+    if (missOnly.length) warns.push(`<div>⚠︎ Nothing logged for ${list(missOnly.map(dayName))}. Log the hours or mark ${missOnly.length > 1 ? "them as days" : "it as a day"} off. The week total doesn't include ${missOnly.length > 1 ? "those days" : "that day"}.</div>`);
     if (r && r.fixed.length){
       const gone = r.fixed.filter(x => state.entries[x] && state.entries[x].removed), chg = r.fixed.filter(x => !gone.includes(x));
       if (chg.length) warns.push(`<div>⚠︎ ${list(chg.map(dayName))} changed after you sent ${chg.length > 1 ? "them" : "it"}, so this text includes a correction.</div>`);
@@ -598,8 +602,8 @@
         const bm = C.breakMins(en);
         tm = fmtTime(en.start)+"–"+fmtTime(en.end)+(bm ? ` · ${fmtDur(bm)} break${nb > 1 ? "s" : ""}` : "");
         h = fmtDur(worked(en));
-      } else if (isMissing) tm = "Not logged";
-      else if (s === today && state.drafts[s]) tm = `Started ${fmtTime(state.drafts[s].start)}`;
+      } else if (state.drafts[s]) tm = `Started ${fmtTime(state.drafts[s].start)}${isMissing ? " · not finished" : ""}`;
+      else if (isMissing) tm = "Not logged";
       const ss = sentState(en); if (ss) anySent = true;
       const badge = ss === "ok" ? `<span class="badge">✓</span>` : ss === "stale" ? `<span class="badge stale">●</span>` : `<span class="badge"></span>`;
       row.innerHTML = `<span class="d">${DOW[i]} ${md(s)}</span><span class="tm">${tm}</span><span class="h">${h}${badge}</span>`;
@@ -801,16 +805,23 @@
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible") return;
     const t = iso(new Date());
-    if (t !== today) { today = t; loadDate(t); }
+    if (t !== today) { today = t; openDay(); }
     else if (cur === today && endIsDefault && !saved()) { $("end").value = nowExact(); render(); }
     else render();
     if (state.pending) window.scrollTo({ top:0, behavior:"smooth" });
   });
 
+  function openDay(){
+    const y = addDays(today, -1);
+    if (!state.entries[y] && state.drafts[y] && new Date().getHours() < 12){
+      loadDate(y); toast(`Finishing ${dayName(y)} (started ${fmtTime(state.drafts[y].start)})`);
+    } else loadDate(today);
+  }
+
   // exposed for UI tests
   window.__hours = { C, state, loadDate, sendable, get cur(){ return cur; } };
 
-  loadDate(today);
+  openDay();
   if ("serviceWorker" in navigator && location.protocol === "https:") {
     navigator.serviceWorker.register("sw.js").catch(()=>{});
   }
