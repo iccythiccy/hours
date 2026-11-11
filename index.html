@@ -268,7 +268,7 @@
   const KEY = "hours.v1";
   const LONG_DAY = 13 * 60;   // warn above this many minutes
   const MAX_BREAKS = 2;
-  const VERSION = "7", UPDATED = "Nov 10, 2026";
+  const VERSION = "8", UPDATED = "Nov 10, 2026";
 
   // ---------- storage (local to this phone) ----------
   function load(){
@@ -293,13 +293,15 @@
     const h12 = (h24 % 12) || 12, ap = h24 < 12 ? "am" : "pm";
     return mm ? `${h12}:${pad(mm)}${ap}` : `${h12}${ap}`;
   }
+  // Whole hours always carry minutes ("1hr 0min"); under an hour stays "45min"
   function fmtDur(m){
-    const h = Math.floor(m/60), r = m%60, out = [];
-    if (!h && !r) return "0hrs";
-    if (h) out.push(h === 1 ? "1hr" : `${h}hrs`);
-    if (r) out.push(`${r}min`);
-    return out.join(" ");
+    const h = Math.floor(m/60), r = m%60;
+    if (!h) return `${r}min`;
+    return `${h === 1 ? "1hr" : `${h}hrs`} ${r}min`;
   }
+  // Texts sent before the "0min" change read "10hrs"; treat them as the same text
+  const norm = t => String(t||"").replace(/\b(\d+hrs?)\b(?! \d+min)/g, "$1 0min");
+  const sameText = (a,b) => norm(a) === norm(b);
   const between = (a,b) => { let d = toMin(b) - toMin(a); if (d < 0) d += 1440; return d; };
   const crossesMidnight = e => toMin(e.end) < toMin(e.start);
   function worked(e){
@@ -512,7 +514,7 @@
     const texted = week.filter(d => E[d] && E[d].sent);
     const latest = texted.length ? texted[texted.length-1] : null;
     const anchor = latest && latest > cur ? latest : cur;
-    const changed = texted.filter(d => line(d) !== E[d].sent.line);
+    const changed = texted.filter(d => !sameText(line(d), E[d].sent.line));
     const curTexted = !!E[cur].sent;
 
     let text, kind, fixed = changed.slice();
@@ -528,7 +530,7 @@
     } else {
       const set = new Set(changed);
       if (!curTexted && !fe.off) set.add(cur);                  // a day logged late, after later days were texted
-      const totalStale = totalLine(totalThrough(anchor)) !== (E[anchor].sent ? E[anchor].sent.total : "");
+      const totalStale = !sameText(totalLine(totalThrough(anchor)), E[anchor].sent ? E[anchor].sent.total : "");
       if (!set.size && !totalStale){
         if (fe.off) return null;
         text = [line(cur), totalLine(totalThrough(cur))].join("\n"); kind = "resend";
@@ -570,7 +572,7 @@
   }
   // Weekdays (Mon–Fri) before the selected day, this week, with nothing logged
   const missingDays = s => weekDates(s).filter((d,i) => i < 5 && d < s && !state.entries[d]);
-  const sentState = (d, en) => !en || !en.sent ? "" : (dayLine(d, en) !== en.sent.line ? "stale" : "ok");
+  const sentState = (d, en) => !en || !en.sent ? "" : (!sameText(dayLine(d, en), en.sent.line) ? "stale" : "ok");
 
   function render(){
     const off = isOff();

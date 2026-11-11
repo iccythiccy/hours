@@ -61,6 +61,6 @@ Everything is stored **on the phone**, inside the home-screen app (browser local
 
 - **A web app, not a native one (for now).** A native iPhone app would add a lock-screen widget, reminders, iCloud backup and Siri, but costs $99/yr (Apple Developer Program, which covers unlimited apps) plus build/signing upkeep. Revisit if lock-screen clock-in becomes worth it.
 - **Apple's own time wheel**, not a custom one, because it's the only way to get real haptics in a web app.
-- **Exact times**, no rounding.
+- **Exact times**, no rounding. Whole hours always show minutes (`1hr 0min`, `9hrs 0min`); under an hour shows `45min`.
 - **No backup reminders.** The text thread is the fallback record.
 - **Daily reminder:** done with an iPhone Shortcuts automation (Time of Day → Show Notification), not built into the app.
