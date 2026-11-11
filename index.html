@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Hours</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hours">
+<meta name="theme-color" content="#0b0b0d">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  :root{
+    --bg:#0b0b0d; --card:#17171a; --card2:#1f1f23; --line:#2a2a2f;
+    --text:#f4f4f6; --muted:#8e8e96; --accent:#0a84ff; --green:#30d158; --red:#ff453a;
+    --r:20px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none}
+  body{padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 24px)}
+  .wrap{max-width:460px;margin:0 auto}
+  header{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 14px}
+  h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0}
+  .sub{color:var(--muted);font-size:14px;margin-top:2px}
+  .iconbtn{width:40px;height:40px;border-radius:50%;border:0;background:var(--card);color:var(--text);
+    display:grid;place-items:center;cursor:pointer}
+  .card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:12px}
+
+  /* Tap-to-pick fields: the real input sits invisibly on top so iOS opens its native wheel */
+  .pick{position:relative;border-radius:14px;background:var(--card2);padding:12px 14px;cursor:pointer}
+  .pick input,.pick select{position:absolute;inset:0;width:100%;height:100%;opacity:0;
+    border:0;margin:0;font-size:16px;-webkit-appearance:none;appearance:none;cursor:pointer}
+  .pick .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  .pick .val{font-size:30px;font-weight:600;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
+  .pick:active{background:#29292e}
+  .daterow{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .daterow .pick{padding:8px 14px}
+  .daterow .pick .val{font-size:17px;margin:0}
+  .status{font-size:13px;color:var(--muted)}
+  .status.ok{color:var(--green)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .breakrow{margin-top:10px}
+  .breakrow .pick{display:flex;align-items:center;justify-content:space-between;padding:12px 14px}
+  .breakrow .val{font-size:17px;margin:0}
+
+  .totals{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .tot{padding:4px 2px}
+  .tot .n{font-size:clamp(20px,6vw,25px);font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tot .t{font-size:13px;color:var(--muted)}
+
+  .bubblewrap{display:flex;justify-content:flex-end;margin:4px 0 14px}
+  .bubble{background:var(--accent);color:#fff;border-radius:20px 20px 6px 20px;padding:10px 14px;
+    font-size:16px;line-height:1.35;white-space:pre-wrap;max-width:88%;-webkit-user-select:text;user-select:text}
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn{border:0;border-radius:14px;padding:15px;font-size:17px;font-weight:600;cursor:pointer;
+    text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.secondary{background:var(--card2);color:var(--text)}
+  .btn:active{transform:scale(.98);opacity:.9}
+
+  .week h2{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 6px;font-weight:600}
+  .row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-top:1px solid var(--line);cursor:pointer}
+  .row:first-of-type{border-top:0}
+  .row .d{font-weight:600;width:74px}
+  .row .tm{color:var(--muted);flex:1;font-size:14px}
+  .row .h{font-variant-numeric:tabular-nums;font-weight:600}
+  .row.empty .d,.row.empty .h{color:#4a4a52}
+  .row.sel .d{color:var(--accent)}
+  .row.future{display:none}
+  .del{background:none;border:0;color:var(--muted);font-size:14px;padding:8px 0 0;cursor:pointer}
+  .del.armed{color:var(--red);font-weight:600}
+
+  .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translate(-50%,30px);
+    background:#2c2c31;color:#fff;padding:10px 16px;border-radius:999px;font-size:15px;font-weight:500;
+    opacity:0;transition:.25s;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  /* settings sheet */
+  .sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;z-index:5}
+  .sheet.open{display:flex}
+  .panel{background:var(--card);width:100%;max-width:460px;margin:0 auto;border-radius:22px 22px 0 0;
+    padding:18px 18px calc(env(safe-area-inset-bottom) + 18px)}
+  .panel h3{margin:0 0 14px;font-size:20px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+  .field input[type=text],.field input[type=tel]{width:100%;background:var(--card2);border:1px solid var(--line);
+    color:var(--text);border-radius:12px;padding:12px;font-size:17px;-webkit-user-select:text;user-select:text}
+  .toggle{display:flex;align-items:center;justify-content:space-between;padding:6px 0 14px}
+  .note{font-size:12px;color:var(--muted);line-height:1.4;margin-top:4px}
+  .hp{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Hours</h1>
+      <div class="sub" id="weekLabel"></div>
+    </div>
+    <button class="iconbtn" id="openSettings" aria-label="Settings">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <div class="card">
+    <div class="daterow">
+      <label class="pick">
+        <div class="val" id="dateVal"></div>
+        <input type="date" id="date" aria-label="Date">
+      </label>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="grid2">
+      <label class="pick">
+        <div class="lbl">Start</div>
+        <div class="val" id="startVal"></div>
+        <input type="time" id="start" aria-label="Start time">
+      </label>
+      <label class="pick">
+        <div class="lbl">End</div>
+        <div class="val" id="endVal"></div>
+        <input type="time" id="end" aria-label="End time">
+      </label>
+    </div>
+
+    <div class="breakrow">
+      <label class="pick">
+        <div class="lbl">Unpaid break</div>
+        <div class="val" id="brkVal"></div>
+        <select id="brk" aria-label="Unpaid break">
+          <option value="0">None</option>
+          <option value="15">15 min</option>
+          <option value="30">30 min</option>
+          <option value="45">45 min</option>
+          <option value="60">1 hr</option>
+          <option value="75">1 hr 15 min</option>
+          <option value="90">1 hr 30 min</option>
+          <option value="120">2 hrs</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="totals">
+      <div class="tot"><div class="n" id="dayTot"></div><div class="t">Today</div></div>
+      <div class="tot"><div class="n" id="weekTot"></div><div class="t">Week through this day</div></div>
+    </div>
+  </div>
+
+  <div class="bubblewrap"><div class="bubble" id="msg"></div></div>
+
+  <div class="btns">
+    <button class="btn secondary" id="copyBtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+    <a class="btn primary" id="textBtn" href="#">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.5 3 2 6.8 2 11.5c0 2.4 1.2 4.6 3.1 6.1-.2 1.3-.8 2.5-1.8 3.4 2 0 3.8-.7 5.1-1.8 1.1.3 2.3.5 3.6.5 5.5 0 10-3.8 10-8.5S17.5 3 12 3z"/></svg>
+      <span id="textLbl">Text</span>
+    </a>
+  </div>
+
+  <div class="card week" style="margin-top:12px">
+    <h2>This week</h2>
+    <div id="weekList"></div>
+    <button class="del" id="delBtn">Delete this day's entry</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="panel">
+    <h3>Settings</h3>
+    <div class="field">
+      <label for="cName">Client name (for the button)</label>
+      <input type="text" id="cName" placeholder="e.g. Mike" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="cPhone">Client's mobile number</label>
+      <input type="tel" id="cPhone" placeholder="e.g. 941-555-0123" autocomplete="off">
+      <div class="note">Stored only on this phone. Used to open Messages with your hours already typed in.</div>
+    </div>
+    <div class="toggle">
+      <span>Mention break in the text</span>
+      <label style="position:relative"><input type="checkbox" id="showBrk" switch></label>
+    </div>
+    <button class="btn primary" id="closeSettings" style="width:100%">Done</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<label class="hp" id="hpLabel"><input type="checkbox" switch id="hpInput"></label>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const KEY = "hours.v1";
+
+  // ---------- storage (local to this phone) ----------
+  function load(){
+    try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.entries) return s; } catch(e){}
+    return { entries:{}, settings:{ name:"", phone:"", showBrk:true } };
+  }
+  function persist(){
+    try { localStorage.setItem(KEY, JSON.stringify(state)); return true; }
+    catch(e){ toast("Couldn't save on this device"); return false; }
+  }
+  const state = load();
+  state.settings = Object.assign({ name:"", phone:"", showBrk:true }, state.settings||{});
+
+  // ---------- time & format helpers ----------
+  const toMin = t => { const [h,m] = t.split(":").map(Number); return h*60+m; };
+  const pad = n => String(n).padStart(2,"0");
+  const fromMin = m => pad(Math.floor(m/60)%24)+":"+pad(m%60);
+  function fmtTime(t){
+    const m = toMin(t), h24 = Math.floor(m/60), mm = m%60;
+    const h12 = (h24 % 12) || 12, ap = h24 < 12 ? "am" : "pm";
+    return mm ? `${h12}:${pad(mm)}${ap}` : `${h12}${ap}`;
+  }
+  function fmtDur(m){
+    const h = Math.floor(m/60), r = m%60, out = [];
+    if (h) out.push(h === 1 ? "1hr" : `${h}hrs`);
+    if (r || !h) out.push(`${r}min`);
+    if (!h && !r) return "0hrs";
+    return out.join(" ");
+  }
+  function worked(e){
+    let d = toMin(e.end) - toMin(e.start);
+    if (d <= 0) d += 1440;            // past midnight
+    return Math.max(0, d - (e.brk||0));
+  }
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const parseIso = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
+  const md = s => { const d = parseIso(s); return `${d.getMonth()+1}/${d.getDate()}`; };
+  function monday(s){ const d = parseIso(s); d.setDate(d.getDate() - ((d.getDay()+6)%7)); return d; }
+  function weekDates(s){ const m = monday(s); return [...Array(7)].map((_,i)=>{ const d = new Date(m); d.setDate(m.getDate()+i); return iso(d); }); }
+  const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  // ---------- haptics (native pickers already tick; this is for buttons) ----------
+  function haptic(){
+    try { if (navigator.vibrate) { navigator.vibrate(10); return; } } catch(e){}
+    try { $("hpLabel").click(); } catch(e){}   // iOS 18+ switch-toggle haptic
+  }
+
+  // ---------- form state ----------
+  const today = iso(new Date());
+  let cur = today;
+
+  function lastEntry(){
+    const keys = Object.keys(state.entries).sort();
+    return keys.length ? state.entries[keys[keys.length-1]] : null;
+  }
+  function nowRounded(){
+    const d = new Date(); let m = d.getHours()*60 + d.getMinutes();
+    m = Math.round(m/15)*15; return fromMin(m % 1440);
+  }
+  function formEntry(){ return { start:$("start").value || "09:00", end:$("end").value || "17:00", brk:+$("brk").value || 0 }; }
+
+  function loadDate(s){
+    cur = s;
+    $("date").value = s;
+    const e = state.entries[s];
+    if (e){
+      $("start").value = e.start; $("end").value = e.end; $("brk").value = String(e.brk||0);
+    } else {
+      const last = lastEntry();
+      $("start").value = last ? last.start : "09:00";
+      $("end").value = (s === today) ? nowRounded() : (last ? last.end : "17:00");
+      $("brk").value = "0";
+    }
+    render();
+  }
+
+  function saveCurrent(quiet){
+    state.entries[cur] = formEntry();
+    if (persist() && !quiet) toast("Saved");
+    render();
+  }
+
+  function weekTotalThrough(s, includeForm){
+    let total = 0;
+    for (const d of weekDates(s)){
+      if (d > s) break;
+      if (d === s && includeForm) total += worked(formEntry());
+      else if (state.entries[d]) total += worked(state.entries[d]);
+    }
+    return total;
+  }
+
+  function message(){
+    const e = formEntry(), day = worked(e), wk = weekTotalThrough(cur, true);
+    const brk = (e.brk && state.settings.showBrk) ? ` (${fmtDur(e.brk)} break)` : "";
+    return `${md(cur)} ${fmtTime(e.start)}-${fmtTime(e.end)}${brk} ${fmtDur(day)}\n${fmtDur(wk)} total for the week.`;
+  }
+
+  function smsHref(body){
+    const num = (state.settings.phone||"").replace(/[^\d+]/g,"");
+    const ios = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
+    return `sms:${num}${ios ? "&" : "?"}body=${encodeURIComponent(body)}`;
+  }
+
+  function render(){
+    const e = formEntry();
+    const d = parseIso(cur);
+    $("dateVal").textContent = (cur === today ? "Today · " : "") + `${DOW[(d.getDay()+6)%7]}, ${MON[d.getMonth()]} ${d.getDate()}`;
+    $("startVal").textContent = fmtTime(e.start);
+    $("endVal").textContent = fmtTime(e.end);
+    $("brkVal").textContent = e.brk ? fmtDur(e.brk) : "None";
+    $("dayTot").textContent = fmtDur(worked(e));
+    $("weekTot").textContent = fmtDur(weekTotalThrough(cur, true));
+    const saved = state.entries[cur];
+    const same = saved && saved.start===e.start && saved.end===e.end && (saved.brk||0)===e.brk;
+    $("status").textContent = same ? "✓ Logged" : "Not logged yet";
+    $("status").className = "status" + (same ? " ok" : "");
+    const m0 = monday(cur);
+    $("weekLabel").textContent = `Week of ${MON[m0.getMonth()]} ${m0.getDate()}`;
+    const msg = message();
+    $("msg").textContent = msg;
+    $("textBtn").href = smsHref(msg);
+    $("textLbl").textContent = state.settings.name ? `Text ${state.settings.name}` : "Text";
+
+    const list = $("weekList"); list.innerHTML = "";
+    weekDates(cur).forEach((s,i)=>{
+      const en = state.entries[s];
+      const row = document.createElement("div");
+      row.className = "row" + (en ? "" : " empty") + (s === cur ? " sel" : "") + (!en && s > today ? " future" : "");
+      row.innerHTML = `<span class="d">${DOW[i]} ${md(s)}</span><span class="tm">${en ? fmtTime(en.start)+"–"+fmtTime(en.end)+(en.brk?" · "+fmtDur(en.brk)+" break":"") : "—"}</span><span class="h">${en ? fmtDur(worked(en)) : ""}</span>`;
+      row.onclick = () => { haptic(); loadDate(s); };
+      list.appendChild(row);
+    });
+    $("delBtn").style.display = saved ? "" : "none";
+  }
+
+  // ---------- toast ----------
+  let tt;
+  function toast(t){ const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(tt); tt = setTimeout(()=>el.classList.remove("show"), 1600); }
+
+  // ---------- events ----------
+  $("date").addEventListener("change", e => { if (e.target.value) loadDate(e.target.value); });
+  ["start","end","brk"].forEach(id => {
+    $(id).addEventListener("input", () => render());
+    $(id).addEventListener("change", () => { if ($(id).value !== "") saveCurrent(true); });
+  });
+
+  $("copyBtn").addEventListener("click", async () => {
+    haptic(); saveCurrent(true);
+    const txt = message();
+    try { await navigator.clipboard.writeText(txt); toast("Copied — paste into your text"); }
+    catch(e){
+      const r = document.createRange(); r.selectNodeContents($("msg"));
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      toast("Selected — tap Copy");
+    }
+  });
+
+  $("textBtn").addEventListener("click", ev => {
+    haptic();
+    if (!state.settings.phone){ ev.preventDefault(); openSettings(); toast("Add your client's number first"); return; }
+    saveCurrent(true);
+    $("textBtn").href = smsHref(message());
+  });
+
+  let armT;
+  $("delBtn").addEventListener("click", () => {
+    const b = $("delBtn");
+    if (!b.classList.contains("armed")){
+      b.classList.add("armed"); b.textContent = "Tap again to delete";
+      armT = setTimeout(()=>{ b.classList.remove("armed"); b.textContent = "Delete this day's entry"; }, 3000);
+      return;
+    }
+    clearTimeout(armT); b.classList.remove("armed"); b.textContent = "Delete this day's entry";
+    delete state.entries[cur]; persist(); haptic(); toast("Deleted"); loadDate(cur);
+  });
+
+  function openSettings(){
+    $("cName").value = state.settings.name; $("cPhone").value = state.settings.phone; $("showBrk").checked = !!state.settings.showBrk;
+    $("sheet").classList.add("open");
+  }
+  function closeSettings(){
+    state.settings.name = $("cName").value.trim();
+    state.settings.phone = $("cPhone").value.trim();
+    state.settings.showBrk = $("showBrk").checked;
+    persist(); $("sheet").classList.remove("open"); render();
+  }
+  $("openSettings").addEventListener("click", () => { haptic(); openSettings(); });
+  $("closeSettings").addEventListener("click", () => { haptic(); closeSettings(); });
+  $("sheet").addEventListener("click", e => { if (e.target === $("sheet")) closeSettings(); });
+
+  // Re-sync "today" when the app is reopened on a new day
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible"){
+      const t = iso(new Date());
+      if (t !== today) location.reload();
+    }
+  });
+
+  // expose pure helpers for testing
+  window.__hours = { fmtTime, fmtDur, worked, weekDates, message, state, loadDate };
+
+  loadDate(today);
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
