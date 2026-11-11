@@ -27,6 +27,9 @@
   header{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 14px}
   h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0}
   .sub{color:var(--muted);font-size:14px;margin-top:2px}
+  .weeknav{display:flex;align-items:center;gap:2px;margin-left:-6px}
+  .wkbtn{background:none;border:0;color:var(--accent);font-size:22px;line-height:1;padding:2px 8px;cursor:pointer;font-family:inherit}
+  .wkbtn:disabled{color:#3a3a40;cursor:default}
   .iconbtn{width:40px;height:40px;border-radius:50%;border:0;background:var(--card);color:var(--text);
     display:grid;place-items:center;cursor:pointer}
   .card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:12px}
@@ -41,11 +44,15 @@
   .pick.attn{box-shadow:inset 0 0 0 2px var(--orange)}
   .pick.attn .lbl{color:var(--orange)}
   .pick .val.blank{color:#4a4a52}
-  .daterow{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .now{position:absolute;top:9px;right:9px;z-index:2;border:0;border-radius:999px;background:rgba(10,132,255,.18);
+    color:var(--accent);font-size:13px;font-weight:600;padding:5px 10px;font-family:inherit;cursor:pointer}
+  .now:active{background:rgba(10,132,255,.35)}
+  .daterow{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
   .daterow .pick{padding:8px 14px}
-  .daterow .pick .val{font-size:17px;margin:0}
-  .status{font-size:13px;color:var(--muted)}
+  .daterow .pick .val{font-size:17px;margin:0;white-space:nowrap}
+  .status{font-size:13px;color:var(--muted);text-align:right}
   .status.ok{color:var(--green)}
+  .status.warnc{color:var(--orange)}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .breakrow{margin-top:10px}
   .breakrow .pick{display:flex;align-items:center;justify-content:space-between;padding:12px 14px}
@@ -57,10 +64,15 @@
   .brkfoot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:14px;color:var(--muted);padding:0 2px}
   .brkfoot .del{padding:0}
 
+  .offpanel{text-align:center;padding:22px 8px 10px}
+  .offpanel .big{font-size:28px;font-weight:700;letter-spacing:-.02em}
+  .offpanel .small{color:var(--muted);font-size:14px;margin-top:4px}
+
   .totals{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
   .tot{padding:4px 2px}
   .tot .n{font-size:clamp(20px,6vw,25px);font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
   .tot .t{font-size:13px;color:var(--muted)}
+  .cardfoot{display:flex;justify-content:flex-end;margin-top:6px}
 
   .warn{display:none;background:rgba(255,159,10,.12);color:#ffb340;border-radius:12px;
     padding:10px 12px;font-size:14px;line-height:1.4;margin-top:12px}
@@ -79,23 +91,32 @@
   .btn:active{transform:scale(.98);opacity:.9}
   .btn.disabled{opacity:.35;pointer-events:none}
 
-  .week h2{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 6px;font-weight:600}
+  .weekhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .week h2{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0;font-weight:600}
+  .linkbtn{background:none;border:0;color:var(--accent);font-size:14px;font-weight:600;font-family:inherit;padding:4px 0;cursor:pointer}
   .row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-top:1px solid var(--line);cursor:pointer}
   .row:first-of-type{border-top:0}
   .row .d{font-weight:600;min-width:74px;margin-right:10px;white-space:nowrap}
   .row .tm{color:var(--muted);flex:1;font-size:14px}
-  .row .h{font-variant-numeric:tabular-nums;font-weight:600}
+  .row .h{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+  .row .badge{display:inline-block;min-width:16px;margin-left:6px;font-size:13px;color:var(--green);text-align:center}
+  .row .badge.stale{color:var(--orange)}
   .row.empty .d,.row.empty .h{color:#4a4a52}
   .row.missing .d,.row.missing .tm{color:var(--orange)}
   .row.sel .d{color:var(--accent)}
   .row.future{display:none}
+  .legend{font-size:12px;color:var(--muted);margin-top:8px}
   .del{background:none;border:0;color:var(--muted);font-size:14px;padding:8px 0 0;cursor:pointer;font-family:inherit}
   .del.armed{color:var(--red);font-weight:600}
 
   .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translate(-50%,30px);
     background:#2c2c31;color:#fff;padding:10px 16px;border-radius:999px;font-size:15px;font-weight:500;
-    opacity:0;transition:.25s;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.4);z-index:10;white-space:nowrap}
+    opacity:0;transition:.25s;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.4);z-index:10;white-space:nowrap;
+    display:flex;align-items:center;gap:14px}
   .toast.show{opacity:1;transform:translate(-50%,0)}
+  .toast.show.undoable{pointer-events:auto}
+  .toast button{display:none;background:none;border:0;color:var(--accent);font-weight:700;font-size:15px;padding:0;font-family:inherit;cursor:pointer}
+  .toast.undoable button{display:inline}
 
   /* settings sheet */
   .sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;z-index:5}
@@ -122,7 +143,11 @@
   <header>
     <div>
       <h1>Hours</h1>
-      <div class="sub" id="weekLabel"></div>
+      <div class="sub weeknav">
+        <button class="wkbtn" id="prevWk" aria-label="Previous week">‹</button>
+        <span id="weekLabel"></span>
+        <button class="wkbtn" id="nextWk" aria-label="Next week">›</button>
+      </div>
     </div>
     <button class="iconbtn" id="openSettings" aria-label="Settings">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -138,24 +163,33 @@
       <div class="status" id="status"></div>
     </div>
 
-    <div class="grid2">
-      <label class="pick" id="startPick">
-        <div class="lbl">Start</div>
-        <div class="val" id="startVal"></div>
-        <input type="time" id="start" aria-label="Start time">
-      </label>
-      <label class="pick" id="endPick">
-        <div class="lbl" id="endLbl">End</div>
-        <div class="val" id="endVal"></div>
-        <input type="time" id="end" aria-label="End time">
-      </label>
+    <div id="workBox">
+      <div class="grid2">
+        <label class="pick" id="startPick">
+          <div class="lbl">Start</div>
+          <div class="val" id="startVal"></div>
+          <input type="time" id="start" aria-label="Start time">
+          <button class="now" id="startNow" type="button">Now</button>
+        </label>
+        <label class="pick" id="endPick">
+          <div class="lbl">End</div>
+          <div class="val" id="endVal"></div>
+          <input type="time" id="end" aria-label="End time">
+          <button class="now" id="endNow" type="button">Now</button>
+        </label>
+      </div>
+
+      <div id="breaks"></div>
+      <div class="breakrow" id="addRow">
+        <button class="pick addbrk" id="addBrk" type="button">
+          <span class="lbl" id="addLbl">Unpaid break</span><span class="val">+ Add</span>
+        </button>
+      </div>
     </div>
 
-    <div id="breaks"></div>
-    <div class="breakrow" id="addRow">
-      <button class="pick addbrk" id="addBrk" type="button">
-        <span class="lbl" id="addLbl">Unpaid break</span><span class="val">+ Add</span>
-      </button>
+    <div class="offpanel" id="offPanel" hidden>
+      <div class="big">Day off</div>
+      <div class="small">No hours counted. Nothing to text unless you're correcting something.</div>
     </div>
 
     <div class="totals">
@@ -164,6 +198,7 @@
     </div>
 
     <div class="warn" id="warn"></div>
+    <div class="cardfoot"><button class="del" id="offBtn" type="button">Mark as day off</button></div>
   </div>
 
   <div class="bubblewrap"><div class="bubble" id="msg"></div></div>
@@ -180,8 +215,12 @@
   </div>
 
   <div class="card week" style="margin-top:12px">
-    <h2>This week</h2>
+    <div class="weekhead">
+      <h2 id="weekTitle">This week</h2>
+      <button class="linkbtn" id="copyWeek" type="button">Copy week</button>
+    </div>
     <div id="weekList"></div>
+    <div class="legend" id="legend"></div>
     <button class="del" id="delBtn">Delete this day's entry</button>
   </div>
 </div>
@@ -218,7 +257,7 @@
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast"><span id="toastTxt"></span><button id="toastUndo" type="button">Undo</button></div>
 <label class="hp" id="hpLabel"><input type="checkbox" switch id="hpInput"></label>
 
 <script>
@@ -240,6 +279,8 @@
   }
   const state = load();
   state.settings = Object.assign({ name:"", phone:"", showBrk:true }, state.settings||{});
+  state.drafts = state.drafts || {};   // clock-ins with no end time yet
+  const clone = o => o === undefined ? undefined : JSON.parse(JSON.stringify(o));
 
   // ---------- time & format helpers ----------
   const toMin = t => { const [h,m] = t.split(":").map(Number); return h*60+m; };
@@ -258,10 +299,11 @@
     return out.join(" ");
   }
   const between = (a,b) => { let d = toMin(b) - toMin(a); if (d < 0) d += 1440; return d; };
-  const crossesMidnight = e => toMin(e.end) <= toMin(e.start);
+  const crossesMidnight = e => toMin(e.end) < toMin(e.start);
   function worked(e){
+    if (!e || e.off) return 0;
     let d = toMin(e.end) - toMin(e.start);
-    if (d <= 0) d += 1440;            // past midnight
+    if (d < 0) d += 1440;             // past midnight
     return Math.max(0, d - (e.brk||0));
   }
   const TIME_RE = /^\d{2}:\d{2}$/;
@@ -269,19 +311,37 @@
   const validBreak = b => b && TIME_RE.test(b.s) && TIME_RE.test(b.e);
   const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   const parseIso = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
+  const addDays = (s, n) => { const d = parseIso(s); d.setDate(d.getDate() + n); return iso(d); };
   const md = s => { const d = parseIso(s); return `${d.getMonth()+1}/${d.getDate()}`; };
   function monday(s){ const d = parseIso(s); d.setDate(d.getDate() - ((d.getDay()+6)%7)); return d; }
   function weekDates(s){ const m = monday(s); return [...Array(7)].map((_,i)=>{ const d = new Date(m); d.setDate(m.getDate()+i); return iso(d); }); }
   const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const dayName = s => DOW[(parseIso(s).getDay()+6)%7] + " " + md(s);
+  const nowExact = () => { const d = new Date(); return fromMin(d.getHours()*60 + d.getMinutes()); };
 
-  // Breaks of a saved entry, whatever version of the app saved it
+  // Breaks of a saved entry, whatever version of the app saved it, earliest first
+  const relTo = start => t => (toMin(t) - toMin(start) + 1440) % 1440;
   function entryBreaks(en){
-    if (!en) return [];
-    if (Array.isArray(en.breaks)) return en.breaks.filter(validBreak).map(b => ({ s:b.s, e:b.e }));
-    if (TIME_RE.test(en.bStart) && TIME_RE.test(en.bEnd)) return [{ s:en.bStart, e:en.bEnd }];
-    return [];
+    if (!en || en.off) return [];
+    let list = [];
+    if (Array.isArray(en.breaks)) list = en.breaks.filter(validBreak).map(b => ({ s:b.s, e:b.e }));
+    else if (TIME_RE.test(en.bStart) && TIME_RE.test(en.bEnd)) list = [{ s:en.bStart, e:en.bEnd }];
+    if (TIME_RE.test(en.start)) { const rel = relTo(en.start); list.sort((a,b) => rel(a.s) - rel(b.s)); }
+    return list;
   }
+
+  // ---------- the text lines ----------
+  function breakText(en){
+    const bs = entryBreaks(en);
+    if (!bs.length || !state.settings.showBrk) return "";
+    return ` (${bs.map(b => `${fmtTime(b.s)}-${fmtTime(b.e)}`).join(", ")} break${bs.length > 1 ? "s" : ""})`;
+  }
+  function dayLine(d, en){
+    if (en.off) return `${md(d)} off`;
+    return `${md(d)} ${fmtTime(en.start)}-${fmtTime(en.end)}${breakText(en)} ${fmtDur(worked(en))}`;
+  }
+  const totalLine = n => `${fmtDur(n)} total for the week.`;
 
   // ---------- haptics (native pickers already tick; this is for buttons) ----------
   function haptic(){
@@ -290,43 +350,38 @@
   }
 
   // ---------- form state ----------
-  const today = iso(new Date());
+  let today = iso(new Date());
   let cur = today;
   let endIsDefault = false;   // end time was filled in by the app, not chosen
   let brks = [];              // [{s, e, sDef, eDef, el}] — breaks being edited
+  const isOff = () => !!(state.entries[cur] && state.entries[cur].off);
 
   function lastEntry(){
-    const keys = Object.keys(state.entries).sort();
+    const keys = Object.keys(state.entries).filter(k => !state.entries[k].off).sort();
     return keys.length ? state.entries[keys[keys.length-1]] : null;
-  }
-  function nowRounded(){
-    const d = new Date(); let m = d.getHours()*60 + d.getMinutes();
-    m = Math.round(m/15)*15; return fromMin(m % 1440);
-  }
-
-  // Minutes from shift start, so breaks sort and compare correctly even past midnight
-  const relTo = start => t => (toMin(t) - toMin(start) + 1440) % 1440;
-  function sortedBreaks(e){
-    const rel = relTo(e.start);
-    return (e.breaks||[]).slice().sort((a,b) => rel(a.s) - rel(b.s));
   }
 
   function formEntry(){
+    if (isOff()) return { off:true };
     const e = { start:$("start").value, end:$("end").value, brk:0 };
     if (brks.length){
       e.breaks = brks.map(b => ({ s:b.s, e:b.e }));
-      if (e.breaks.every(validBreak)) e.brk = e.breaks.reduce((t,b) => t + between(b.s, b.e), 0);
-      if (TIME_RE.test(e.start) && e.breaks.every(validBreak)) e.breaks = sortedBreaks(e);
+      if (e.breaks.every(validBreak)){
+        e.brk = e.breaks.reduce((t,b) => t + between(b.s, b.e), 0);
+        if (TIME_RE.test(e.start)) e.breaks = entryBreaks(e);
+      }
     }
     return e;
   }
-  const complete = e => TIME_RE.test(e.start) && TIME_RE.test(e.end) && (!e.breaks || e.breaks.every(validBreak));
+  const complete = e => e.off || (TIME_RE.test(e.start) && TIME_RE.test(e.end) && (!e.breaks || e.breaks.every(validBreak)));
+  const sameEntry = (a,b) => !!(a && b) && (a.off || b.off ? !!a.off === !!b.off
+    : a.start===b.start && a.end===b.end && JSON.stringify(entryBreaks(a)) === JSON.stringify(entryBreaks(b)));
 
   function breakProblems(e){
     const probs = [];
-    if (!e.breaks || !e.breaks.every(validBreak)) return probs;
+    if (e.off || !e.breaks || !e.breaks.every(validBreak)) return probs;
     const rel = relTo(e.start), L = between(e.start, e.end) || 1440;
-    const bs = sortedBreaks(e);
+    const bs = entryBreaks(e);
     if (bs.some(b => !(rel(b.s) < rel(b.e) && rel(b.e) <= L)))
       probs.push((bs.length > 1 ? "A break isn't" : "The break isn't") + " inside your work hours. Check the break times (and AM/PM).");
     for (let i = 0; i < bs.length - 1; i++){
@@ -353,14 +408,14 @@
       ins[0].value = b.s; ins[1].value = b.e;
       const wire = (input, key, defKey) => {
         input.addEventListener("input", () => { b[key] = input.value; b[defKey] = false; render(); });
-        input.addEventListener("change", () => { b[key] = input.value; b[defKey] = false; saveCurrent(true); render(); });
+        input.addEventListener("change", () => { b[key] = input.value; b[defKey] = false; saveCurrent(); });
       };
       wire(ins[0], "s", "sDef"); wire(ins[1], "e", "eDef");
       blk.querySelector(".del").addEventListener("click", () => {
         haptic();
         brks.splice(brks.indexOf(b), 1);
         buildBreaks();
-        if (state.entries[cur]) saveCurrent(true); else render();
+        saveCurrent();
       });
       box.appendChild(blk);
     });
@@ -374,60 +429,128 @@
     cur = s;
     $("date").value = s;
     const e = state.entries[s];
-    if (e){
+    if (e && !e.off){
       $("start").value = e.start; $("end").value = e.end;
       endIsDefault = false;
       const list = entryBreaks(e);
       if (list.length) setBreaks(list, false);
       else if (e.brk) setBreaks([{ s:"12:00", e:fromMin(720 + e.brk) }], true);  // oldest duration-only break
       else setBreaks([]);
-    } else {
-      const last = lastEntry();
-      $("start").value = last ? last.start : "09:00";
-      $("end").value = (s === today) ? nowRounded() : (last ? last.end : "17:00");
+    } else if (!e) {
+      const last = lastEntry(), draft = state.drafts[s];
+      $("start").value = draft ? draft.start : (last ? last.start : "09:00");
+      $("end").value = (s === today) ? nowExact() : (last ? last.end : "17:00");
       endIsDefault = true;
+      setBreaks(draft && draft.breaks ? draft.breaks : [], false);
+    } else {
       setBreaks([]);
     }
     render();
   }
 
-  function saveCurrent(quiet){
+  // ---------- undo (one step, for changes to days that were already logged) ----------
+  let undo = null, undoTimer;
+  function snapshot(d){
+    if (!undo || undo.date !== d) undo = { date:d, prev: clone(state.entries[d]) };
+  }
+  function offerUndo(label){
+    toast(label, true);
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(() => { undo = null; }, 6000);
+  }
+  $("toastUndo").addEventListener("click", () => {
+    if (!undo) return;
+    haptic();
+    if (undo.prev === undefined) delete state.entries[undo.date]; else state.entries[undo.date] = undo.prev;
+    const d = undo.date; undo = null;
+    persist(); toast("Undone"); loadDate(d);
+  });
+
+  // Save the form. Until an end time is chosen (or you send), today's start is kept as a clock-in draft.
+  function saveCurrent(){
+    if (isOff()) { render(); return false; }
     const e = formEntry();
-    if (!complete(e)) return false;
+    const prev = state.entries[cur];
+    if (!prev && endIsDefault){
+      if (TIME_RE.test(e.start)){
+        state.drafts[cur] = { start:e.start, breaks: brks.filter(validBreak).map(b => ({ s:b.s, e:b.e })) };
+        persist();
+      }
+      render(); return false;
+    }
+    if (!complete(e)) { render(); return false; }
     if (!e.breaks || !e.breaks.length) delete e.breaks;
+    const changed = prev && !sameEntry(prev, e);
+    if (prev && !changed) { render(); return true; }
+    if (changed) snapshot(cur);
+    if (prev && prev.sent) e.sent = prev.sent;
     state.entries[cur] = e;
-    if (persist() && !quiet) toast("Saved");
+    delete state.drafts[cur];
+    endIsDefault = false;
+    if (persist() && changed) offerUndo(`Updated ${dayName(cur)}`);
     render();
     return true;
   }
 
-  function weekTotalThrough(s, includeForm){
-    let total = 0;
-    const f = formEntry();
-    for (const d of weekDates(s)){
-      if (d > s) break;
-      if (d === s && includeForm) { if (complete(f)) total += worked(f); }
-      else if (state.entries[d]) total += worked(state.entries[d]);
+  // ---------- composing the text ----------
+  // Works out what your client needs to hear: today's line, plus corrections for any day
+  // whose hours changed after you texted it, ending with the up-to-date week total.
+  function compose(){
+    const fe = formEntry();
+    if (!complete(fe)) return null;
+    const week = weekDates(cur);
+    const E = {};
+    week.forEach(d => { if (state.entries[d]) E[d] = state.entries[d]; });
+    const saved = state.entries[cur];
+    E[cur] = Object.assign({}, fe, saved && saved.sent ? { sent:saved.sent } : {});
+
+    const totalThrough = d => week.filter(x => x <= d).reduce((t,x) => t + worked(E[x]), 0);
+    const line = d => dayLine(d, E[d]);
+    const corr = d => "Correction: " + line(d);
+    const texted = week.filter(d => E[d] && E[d].sent);
+    const latest = texted.length ? texted[texted.length-1] : null;
+    const anchor = latest && latest > cur ? latest : cur;
+    const changed = texted.filter(d => line(d) !== E[d].sent.line);
+    const curTexted = !!E[cur].sent;
+
+    let text, kind, fixed = changed.slice();
+    if (anchor === cur && !curTexted){
+      const before = changed.filter(d => d < cur);
+      if (fe.off){
+        if (!before.length) return null;
+        text = [...before.map(corr), totalLine(totalThrough(cur))].join("\n"); kind = "fix";
+      } else {
+        text = [...before.map(corr), line(cur), totalLine(totalThrough(cur))].join("\n");
+        kind = before.length ? "daily+fix" : "daily";
+      }
+    } else {
+      const set = new Set(changed);
+      if (!curTexted && !fe.off) set.add(cur);                  // a day logged late, after later days were texted
+      const totalStale = totalLine(totalThrough(anchor)) !== (E[anchor].sent ? E[anchor].sent.total : "");
+      if (!set.size && !totalStale){
+        if (fe.off) return null;
+        text = [line(cur), totalLine(totalThrough(cur))].join("\n"); kind = "resend";
+      } else {
+        const lines = [...set].sort().map(corr);
+        text = lines.length ? [...lines, totalLine(totalThrough(anchor))].join("\n") : "Updated: " + totalLine(totalThrough(anchor));
+        kind = "fix"; fixed = [...set].sort();
+      }
     }
-    return total;
+    return { text, kind, anchor, fixed: fixed.filter(d => d !== cur || curTexted) };
   }
 
-  // Weekdays (Mon–Fri) before the selected day, this week, with nothing logged
-  function missingDays(s){
-    return weekDates(s).filter((d,i) => i < 5 && d < s && !state.entries[d]);
-  }
-
-  function breakText(e){
-    const bs = e.breaks || [];
-    if (!bs.length || !state.settings.showBrk) return "";
-    return ` (${bs.map(b => `${fmtTime(b.s)}-${fmtTime(b.e)}`).join(", ")} break${bs.length > 1 ? "s" : ""})`;
-  }
-
-  function message(){
-    const e = formEntry();
-    if (!complete(e)) return null;
-    const day = worked(e), wk = weekTotalThrough(cur, true);
-    return `${md(cur)} ${fmtTime(e.start)}-${fmtTime(e.end)}${breakText(e)} ${fmtDur(day)}\n${fmtDur(wk)} total for the week.`;
+  // After sending: remember what your client now knows for each day this week
+  function markSent(r){
+    const week = weekDates(cur), now = Date.now();
+    const totalThrough = d => week.filter(x => x <= d).reduce((t,x) => t + worked(state.entries[x]), 0);
+    week.forEach(d => {
+      const en = state.entries[d];
+      if (!en || d > r.anchor) return;
+      if (en.sent || (d === cur && !en.off)){
+        en.sent = { line: dayLine(d, en), total: totalLine(totalThrough(d)), at: now };
+      }
+    });
+    persist();
   }
 
   function smsHref(body){
@@ -436,93 +559,142 @@
     return `sms:${num}${ios ? "&" : "?"}body=${encodeURIComponent(body)}`;
   }
 
-  function dayName(s){ return DOW[(parseIso(s).getDay()+6)%7] + " " + md(s); }
-  const sameEntry = (a,b) => a && b && a.start===b.start && a.end===b.end
-    && JSON.stringify(entryBreaks(a)) === JSON.stringify(entryBreaks(b));
+  function weekTotalThrough(s){
+    const f = formEntry();
+    return weekDates(s).filter(d => d <= s).reduce((t,d) => {
+      if (d === s) return t + (complete(f) ? worked(f) : 0);
+      return t + worked(state.entries[d]);
+    }, 0);
+  }
+  // Weekdays (Mon–Fri) before the selected day, this week, with nothing logged
+  const missingDays = s => weekDates(s).filter((d,i) => i < 5 && d < s && !state.entries[d]);
+  const sentState = (d, en) => !en || !en.sent ? "" : (dayLine(d, en) !== en.sent.line ? "stale" : "ok");
 
   function render(){
+    const off = isOff();
     const e = formEntry(), ok = complete(e);
     const d = parseIso(cur);
     $("dateVal").textContent = (cur === today ? "Today · " : "") + `${DOW[(d.getDay()+6)%7]}, ${MON[d.getMonth()]} ${d.getDate()}`;
 
-    $("startVal").textContent = e.start ? fmtTime(e.start) : "—";
-    $("startVal").classList.toggle("blank", !e.start);
-    $("endVal").textContent = e.end ? fmtTime(e.end) : "—";
-    $("endVal").classList.toggle("blank", !e.end);
-    $("startPick").classList.toggle("attn", !e.start);
-    $("endPick").classList.toggle("attn", !e.end || endIsDefault);
-    $("endLbl").textContent = !e.end ? "End · set time" : (endIsDefault ? "End · check" : "End");
-
-    // breaks
-    brks.forEach((b, i) => {
-      const el = b.el;
-      el.sVal.textContent = b.s ? fmtTime(b.s) : "—"; el.sVal.classList.toggle("blank", !b.s);
-      el.eVal.textContent = b.e ? fmtTime(b.e) : "—"; el.eVal.classList.toggle("blank", !b.e);
-      el.sPick.classList.toggle("attn", !b.s || b.sDef);
-      el.ePick.classList.toggle("attn", !b.e || b.eDef);
-      const name = brks.length > 1 ? `Break ${i+1}` : "Break";
-      el.foot.textContent = validBreak(b) ? `${name} · ${fmtDur(between(b.s, b.e))} unpaid` : `${name} · set both times`;
-    });
-    $("addRow").hidden = brks.length >= MAX_BREAKS;
-    $("addLbl").textContent = brks.length ? "Second break" : "Unpaid break";
-
-    $("dayTot").textContent = ok ? fmtDur(worked(e)) : "—";
-    $("weekTot").textContent = fmtDur(weekTotalThrough(cur, true));
-
-    const saved = state.entries[cur];
-    const same = ok && sameEntry(saved, e);
-    $("status").textContent = same ? "✓ Logged" : "Not logged yet";
-    $("status").className = "status" + (same ? " ok" : "");
+    // week header + nav
     const m0 = monday(cur);
     $("weekLabel").textContent = `Week of ${MON[m0.getMonth()]} ${m0.getDate()}`;
+    $("nextWk").disabled = addDays(iso(m0), 7) > today;
+    $("weekTitle").textContent = weekDates(cur).includes(today) ? "This week" : `Week of ${md(iso(m0))}`;
+
+    $("workBox").hidden = off;
+    $("offPanel").hidden = !off;
+    $("offBtn").textContent = off ? "Not a day off — log hours" : "Mark as day off";
+
+    if (!off){
+      $("startVal").textContent = e.start ? fmtTime(e.start) : "—";
+      $("startVal").classList.toggle("blank", !e.start);
+      $("endVal").textContent = e.end ? fmtTime(e.end) : "—";
+      $("endVal").classList.toggle("blank", !e.end);
+      $("startPick").classList.toggle("attn", !e.start);
+      $("endPick").classList.toggle("attn", !e.end || endIsDefault);
+      brks.forEach((b, i) => {
+        const el = b.el;
+        el.sVal.textContent = b.s ? fmtTime(b.s) : "—"; el.sVal.classList.toggle("blank", !b.s);
+        el.eVal.textContent = b.e ? fmtTime(b.e) : "—"; el.eVal.classList.toggle("blank", !b.e);
+        el.sPick.classList.toggle("attn", !b.s || b.sDef);
+        el.ePick.classList.toggle("attn", !b.e || b.eDef);
+        const name = brks.length > 1 ? `Break ${i+1}` : "Break";
+        el.foot.textContent = validBreak(b) ? `${name} · ${fmtDur(between(b.s, b.e))} unpaid` : `${name} · set both times`;
+      });
+      $("addRow").hidden = brks.length >= MAX_BREAKS;
+      $("addLbl").textContent = brks.length ? "Second break" : "Unpaid break";
+    }
+
+    $("dayTot").textContent = off ? "0hrs" : (ok ? fmtDur(worked(e)) : "—");
+    $("weekTot").textContent = fmtDur(weekTotalThrough(cur));
+
+    // status
+    const saved = state.entries[cur], draft = state.drafts[cur];
+    let st = "Not logged yet", cls = "";
+    if (saved && sameEntry(saved, e)){
+      const ss = sentState(cur, saved);
+      if (ss === "ok") { st = "✓ Texted"; cls = " ok"; }
+      else if (ss === "stale") { st = "Changed since texted"; cls = " warnc"; }
+      else { st = off ? "Day off" : "Logged · not texted"; }
+    } else if (!saved && draft && cur === today) {
+      st = `Started ${fmtTime(draft.start)}`;
+    }
+    $("status").textContent = st;
+    $("status").className = "status" + cls;
+
+    // message
+    const r = compose();
 
     // warnings
     const warns = [];
     const miss = missingDays(cur);
     if (miss.length){
-      warns.push(`Nothing logged for ${miss.map(dayName).join(", ")}. The week total doesn't include ${miss.length > 1 ? "those days" : "that day"}.`);
+      warns.push(`Nothing logged for ${miss.map(dayName).join(", ")}. Log the hours or mark ${miss.length > 1 ? "them as days" : "it as a day"} off. The week total doesn't include ${miss.length > 1 ? "those days" : "that day"}.`);
     }
-    if (ok){
+    if (!off && ok && !(endIsDefault && !saved)){
       const w = worked(e);
       if (crossesMidnight(e)) warns.push(`End is earlier than start, so this counts as working past midnight (${fmtDur(w)}). Check AM/PM.`);
       else if (w > LONG_DAY) warns.push(`That's ${fmtDur(w)} in one day. Check AM/PM.`);
       warns.push(...breakProblems(e));
     }
-    if (brks.some(b => b.sDef || b.eDef)) warns.push("Break times in orange are placeholders. Set them to when you actually took the break.");
-    if (endIsDefault && e.end && !saved) warns.push(cur === today
-      ? "End time was filled in with the current time. Adjust it if you stopped earlier."
+    if (!off && brks.some(b => b.sDef || b.eDef)) warns.push("Break times in orange are placeholders. Set them to when you actually took the break.");
+    if (!off && endIsDefault && e.end && !saved) warns.push(cur === today
+      ? "End time is showing the current time. Tap Now when you finish, or set it on the wheel."
       : "End time was filled in from your last entry. Make sure it's right.");
+    if (r && (r.kind === "fix" || r.kind === "daily+fix") && r.fixed.length){
+      warns.push(`You changed ${r.fixed.map(dayName).join(", ")} after texting it, so this text includes a correction.`);
+    }
+    if (r && r.kind === "fix" && !(saved && saved.sent) && !off){
+      warns.push("You've already texted a later day this week, so this goes out as a correction with the updated week total.");
+    }
     $("warn").innerHTML = warns.map(w => `<div>⚠︎ ${w}</div>`).join("");
     $("warn").classList.toggle("show", warns.length > 0);
 
-    // message + buttons
-    const msg = message();
-    $("msg").textContent = msg || (TIME_RE.test(e.start) && TIME_RE.test(e.end) ? "Set both break times, or remove the break." : "Set a start and end time.");
-    $("msg").classList.toggle("blank", !msg);
-    $("copyBtn").classList.toggle("disabled", !msg);
-    $("textBtn").classList.toggle("disabled", !msg);
-    $("textBtn").href = msg ? smsHref(msg) : "#";
-    $("textLbl").textContent = state.settings.name ? `Text ${state.settings.name}` : "Text";
+    $("msg").textContent = r ? r.text
+      : off ? "Day off. Nothing to text."
+      : (TIME_RE.test(e.start) && TIME_RE.test(e.end) ? "Set both break times, or remove the break." : "Set a start and end time.");
+    $("msg").classList.toggle("blank", !r);
+    $("copyBtn").classList.toggle("disabled", !r);
+    $("textBtn").classList.toggle("disabled", !r);
+    $("textBtn").href = r ? smsHref(r.text) : "#";
+    const who = state.settings.name ? ` ${state.settings.name}` : "";
+    $("textLbl").textContent = r && r.kind === "fix" ? "Text fix" : `Text${who}`;
 
     // week list
     const list = $("weekList"); list.innerHTML = "";
+    let anySent = false;
     weekDates(cur).forEach((s,i)=>{
       const en = state.entries[s];
       const isMissing = !en && i < 5 && s < today;
       const row = document.createElement("div");
-      row.className = "row" + (en ? "" : " empty") + (isMissing ? " missing" : "") + (s === cur ? " sel" : "") + (!en && s > today ? " future" : "");
-      const nb = en ? Math.max(entryBreaks(en).length, en.brk ? 1 : 0) : 0;
-      const tm = en ? fmtTime(en.start)+"–"+fmtTime(en.end)+(en.brk ? ` · ${fmtDur(en.brk)} break${nb > 1 ? "s" : ""}` : "") : (isMissing ? "Not logged" : "—");
-      row.innerHTML = `<span class="d">${DOW[i]} ${md(s)}</span><span class="tm">${tm}</span><span class="h">${en ? fmtDur(worked(en)) : ""}</span>`;
+      row.className = "row" + (en ? "" : " empty") + (isMissing ? " missing" : "") + (s === cur ? " sel" : "") + (!en && s > today && s !== cur ? " future" : "");
+      let tm = "—", h = "";
+      if (en && en.off) { tm = "Day off"; }
+      else if (en){
+        const nb = Math.max(entryBreaks(en).length, en.brk ? 1 : 0);
+        tm = fmtTime(en.start)+"–"+fmtTime(en.end)+(en.brk ? ` · ${fmtDur(en.brk)} break${nb > 1 ? "s" : ""}` : "");
+        h = fmtDur(worked(en));
+      } else if (isMissing) tm = "Not logged";
+      else if (!en && s === today && state.drafts[s]) tm = `Started ${fmtTime(state.drafts[s].start)}`;
+      const ss = sentState(s, en); if (ss) anySent = true;
+      const badge = ss === "ok" ? `<span class="badge">✓</span>` : ss === "stale" ? `<span class="badge stale">●</span>` : `<span class="badge"></span>`;
+      row.innerHTML = `<span class="d">${DOW[i]} ${md(s)}</span><span class="tm">${tm}</span><span class="h">${h}${badge}</span>`;
       row.onclick = () => { haptic(); loadDate(s); };
       list.appendChild(row);
     });
+    $("legend").textContent = anySent ? "✓ texted   ● changed since texted" : "";
     $("delBtn").style.display = saved ? "" : "none";
   }
 
   // ---------- toast ----------
   let tt;
-  function toast(t){ const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(tt); tt = setTimeout(()=>el.classList.remove("show"), 1800); }
+  function toast(t, undoable){
+    const el = $("toast"); $("toastTxt").textContent = t;
+    el.classList.toggle("undoable", !!undoable);
+    el.classList.add("show"); clearTimeout(tt);
+    tt = setTimeout(()=>el.classList.remove("show"), undoable ? 5000 : 1800);
+  }
 
   async function copyText(txt, fallbackEl){
     try { await navigator.clipboard.writeText(txt); return true; }
@@ -539,7 +711,22 @@
   $("date").addEventListener("change", e => { if (e.target.value) loadDate(e.target.value); });
   ["start","end"].forEach(id => {
     $(id).addEventListener("input", () => { if (id === "end") endIsDefault = false; render(); });
-    $(id).addEventListener("change", () => { if (id === "end") endIsDefault = false; saveCurrent(true); render(); });
+    $(id).addEventListener("change", () => { if (id === "end") endIsDefault = false; saveCurrent(); });
+  });
+  ["startNow","endNow"].forEach(id => {
+    $(id).addEventListener("click", ev => {
+      ev.preventDefault(); ev.stopPropagation(); haptic();
+      const field = id === "startNow" ? "start" : "end";
+      $(field).value = nowExact();
+      if (field === "end") endIsDefault = false;
+      saveCurrent();
+      toast(field === "start" ? `Started ${fmtTime($("start").value)}` : `Finished ${fmtTime($("end").value)}`);
+    });
+  });
+
+  $("prevWk").addEventListener("click", () => { haptic(); loadDate(addDays(cur, -7)); });
+  $("nextWk").addEventListener("click", () => {
+    haptic(); const n = addDays(cur, 7); loadDate(n > today ? today : n);
   });
 
   $("addBrk").addEventListener("click", () => {
@@ -554,19 +741,49 @@
     render();
   });
 
+  // Sending: save, then remember what was sent (after the link has opened Messages)
+  function prepareSend(){
+    const r = compose(); if (!r) return null;
+    endIsDefault = false;
+    brks.forEach(b => { b.sDef = b.eDef = false; });
+    saveCurrent();
+    return compose() || r;
+  }
   $("copyBtn").addEventListener("click", async () => {
-    const txt = message(); if (!txt) return;
-    haptic(); saveCurrent(true);
-    toast(await copyText(txt, $("msg")) ? "Copied — paste into your text" : "Selected — tap Copy");
+    const r = prepareSend(); if (!r) return;
+    haptic();
+    const ok = await copyText(r.text, $("msg"));
+    if (ok) { markSent(r); render(); toast("Copied — paste into your text"); }
+    else toast("Selected — tap Copy");
   });
-
   $("textBtn").addEventListener("click", ev => {
-    const txt = message();
-    if (!txt){ ev.preventDefault(); return; }
+    if (!compose()){ ev.preventDefault(); return; }
     haptic();
     if (!state.settings.phone){ ev.preventDefault(); openSettings(); toast("Add your client's number first"); return; }
-    saveCurrent(true);
-    $("textBtn").href = smsHref(txt);
+    const r = prepareSend();
+    $("textBtn").href = smsHref(r.text);
+    setTimeout(() => { markSent(r); render(); }, 400);
+  });
+
+  let offArm;
+  $("offBtn").addEventListener("click", () => {
+    const b = $("offBtn"), saved = state.entries[cur];
+    haptic();
+    if (isOff()){
+      snapshot(cur);
+      delete state.entries[cur]; persist(); loadDate(cur); offerUndo(`${dayName(cur)} is no longer a day off`);
+      return;
+    }
+    if (saved && !b.classList.contains("armed")){
+      b.classList.add("armed"); b.textContent = "Tap again to replace these hours with a day off";
+      offArm = setTimeout(()=>{ b.classList.remove("armed"); render(); }, 3000);
+      return;
+    }
+    clearTimeout(offArm); b.classList.remove("armed");
+    snapshot(cur);
+    state.entries[cur] = Object.assign({ off:true }, saved && saved.sent ? { sent:saved.sent } : {});
+    delete state.drafts[cur];
+    persist(); loadDate(cur); offerUndo(`${dayName(cur)} marked as a day off`);
   });
 
   let armT;
@@ -578,7 +795,21 @@
       return;
     }
     clearTimeout(armT); b.classList.remove("armed"); b.textContent = "Delete this day's entry";
-    delete state.entries[cur]; persist(); haptic(); toast("Deleted"); loadDate(cur);
+    snapshot(cur);
+    delete state.entries[cur]; delete state.drafts[cur]; persist(); haptic(); loadDate(cur); offerUndo(`Deleted ${dayName(cur)}`);
+  });
+
+  function weekText(){
+    const week = weekDates(cur).filter(d => state.entries[d]);
+    if (!week.length) return null;
+    const total = week.reduce((t,d) => t + worked(state.entries[d]), 0);
+    return [`Week of ${md(iso(monday(cur)))}`, ...week.map(d => dayLine(d, state.entries[d])), totalLine(total)].join("\n");
+  }
+  $("copyWeek").addEventListener("click", async () => {
+    haptic();
+    const t = weekText();
+    if (!t){ toast("Nothing logged this week yet"); return; }
+    toast(await copyText(t) ? "Week copied" : "Couldn't copy on this device");
   });
 
   // ---------- settings + backup ----------
@@ -600,7 +831,7 @@
     persist(); $("sheet").classList.remove("open"); render();
   }
   function backupText(){
-    return `Hours backup ${md(today)}/${today.slice(0,4)}\n` + JSON.stringify({ v:2, entries: state.entries });
+    return `Hours backup ${md(today)}/${today.slice(0,4)}\n` + JSON.stringify({ v:3, entries: state.entries });
   }
   function parseBackup(txt){
     const i = txt.indexOf("{"), j = txt.lastIndexOf("}");
@@ -609,11 +840,20 @@
     const src = obj && obj.entries; if (!src || typeof src !== "object") return null;
     const clean = {};
     for (const [k,v] of Object.entries(src)){
-      if (!(DATE_RE.test(k) && v && TIME_RE.test(v.start) && TIME_RE.test(v.end))) continue;
-      const bs = entryBreaks(v).slice(0, MAX_BREAKS);
-      clean[k] = bs.length
-        ? { start:v.start, end:v.end, brk: bs.reduce((t,b) => t + between(b.s, b.e), 0), breaks: bs }
-        : { start:v.start, end:v.end, brk: Math.max(0, Math.min(600, +v.brk || 0)) };
+      if (!DATE_RE.test(k) || !v) continue;
+      const sent = v.sent && typeof v.sent.line === "string" && typeof v.sent.total === "string"
+        ? { line:v.sent.line.slice(0,300), total:v.sent.total.slice(0,100), at:+v.sent.at || 0 } : null;
+      let en = null;
+      if (v.off) en = { off:true };
+      else if (TIME_RE.test(v.start) && TIME_RE.test(v.end)){
+        const bs = entryBreaks(v).slice(0, MAX_BREAKS);
+        en = bs.length
+          ? { start:v.start, end:v.end, brk: bs.reduce((t,b) => t + between(b.s, b.e), 0), breaks: bs }
+          : { start:v.start, end:v.end, brk: Math.max(0, Math.min(600, +v.brk || 0)) };
+      }
+      if (!en) continue;
+      if (sent) en.sent = sent;
+      clean[k] = en;
     }
     return clean;
   }
@@ -640,13 +880,17 @@
   $("closeSettings").addEventListener("click", () => { haptic(); closeSettings(); });
   $("sheet").addEventListener("click", e => { if (e.target === $("sheet")) closeSettings(); });
 
-  // Re-sync "today" when the app is reopened on a new day
+  // Reopened later: jump to the new day; keep the default end time current
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && iso(new Date()) !== today) location.reload();
+    if (document.visibilityState !== "visible") return;
+    const t = iso(new Date());
+    if (t !== today) { today = t; loadDate(t); return; }
+    if (cur === today && endIsDefault && !state.entries[cur]) { $("end").value = nowExact(); render(); }
   });
 
   // exposed for testing
-  window.__hours = { fmtTime, fmtDur, worked, weekDates, message, state, loadDate, parseBackup, backupText };
+  window.__hours = { fmtTime, fmtDur, worked, weekDates, compose, state, loadDate, parseBackup, backupText, weekText,
+                     get cur(){ return cur; } };
 
   loadDate(today);
   if ("serviceWorker" in navigator && location.protocol === "https:") {
