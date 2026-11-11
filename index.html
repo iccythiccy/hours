@@ -254,6 +254,7 @@
     </div>
 
     <button class="btn primary" id="closeSettings" style="width:100%">Done</button>
+    <div class="note" id="version" style="text-align:center;margin-top:12px"></div>
   </div>
 </div>
 
@@ -267,6 +268,7 @@
   const KEY = "hours.v1";
   const LONG_DAY = 13 * 60;   // warn above this many minutes
   const MAX_BREAKS = 2;
+  const VERSION = "7", UPDATED = "Nov 10, 2026";
 
   // ---------- storage (local to this phone) ----------
   function load(){
@@ -822,6 +824,7 @@
   function openSettings(){
     $("cName").value = state.settings.name; $("cPhone").value = state.settings.phone; $("showBrk").checked = !!state.settings.showBrk;
     $("restoreText").value = ""; backupNote();
+    $("version").textContent = `Version ${VERSION} · Updated ${UPDATED}`;
     $("sheet").classList.add("open");
   }
   function closeSettings(){
