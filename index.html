@@ -52,7 +52,8 @@
   .breakrow .val{font-size:17px;margin:0}
   .addbrk{width:100%;border:0;color:var(--text);font-family:inherit;text-align:left}
   .addbrk .val{color:var(--accent);font-weight:600}
-  #breakBox .pick .val{font-size:24px}
+  #breaks .pick .val{font-size:24px}
+  .brkblock{margin-top:10px}
   .brkfoot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:14px;color:var(--muted);padding:0 2px}
   .brkfoot .del{padding:0}
 
@@ -150,25 +151,11 @@
       </label>
     </div>
 
-    <div class="breakrow" id="breakNone">
+    <div id="breaks"></div>
+    <div class="breakrow" id="addRow">
       <button class="pick addbrk" id="addBrk" type="button">
-        <span class="lbl">Unpaid break</span><span class="val">+ Add</span>
+        <span class="lbl" id="addLbl">Unpaid break</span><span class="val">+ Add</span>
       </button>
-    </div>
-    <div id="breakBox" hidden>
-      <div class="grid2" style="margin-top:10px">
-        <label class="pick" id="bStartPick">
-          <div class="lbl" id="bStartLbl">Break start</div>
-          <div class="val" id="bStartVal"></div>
-          <input type="time" id="bStart" aria-label="Break start">
-        </label>
-        <label class="pick" id="bEndPick">
-          <div class="lbl" id="bEndLbl">Break end</div>
-          <div class="val" id="bEndVal"></div>
-          <input type="time" id="bEnd" aria-label="Break end">
-        </label>
-      </div>
-      <div class="brkfoot"><span id="brkDur"></span><button class="del" id="rmBrk" type="button">Remove break</button></div>
     </div>
 
     <div class="totals">
@@ -212,7 +199,7 @@
       <div class="note">Stored only on this phone. Used to open Messages with your hours already typed in.</div>
     </div>
     <div class="toggle">
-      <span>Mention break in the text</span>
+      <span>Include break times in the text</span>
       <label style="position:relative"><input type="checkbox" id="showBrk" switch></label>
     </div>
 
@@ -240,6 +227,7 @@
   const $ = id => document.getElementById(id);
   const KEY = "hours.v1";
   const LONG_DAY = 13 * 60;   // warn above this many minutes
+  const MAX_BREAKS = 2;
 
   // ---------- storage (local to this phone) ----------
   function load(){
@@ -269,8 +257,8 @@
     if (r) out.push(`${r}min`);
     return out.join(" ");
   }
-  const crossesMidnight = e => toMin(e.end) <= toMin(e.start);
   const between = (a,b) => { let d = toMin(b) - toMin(a); if (d < 0) d += 1440; return d; };
+  const crossesMidnight = e => toMin(e.end) <= toMin(e.start);
   function worked(e){
     let d = toMin(e.end) - toMin(e.start);
     if (d <= 0) d += 1440;            // past midnight
@@ -278,6 +266,7 @@
   }
   const TIME_RE = /^\d{2}:\d{2}$/;
   const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const validBreak = b => b && TIME_RE.test(b.s) && TIME_RE.test(b.e);
   const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   const parseIso = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
   const md = s => { const d = parseIso(s); return `${d.getMonth()+1}/${d.getDate()}`; };
@@ -285,6 +274,14 @@
   function weekDates(s){ const m = monday(s); return [...Array(7)].map((_,i)=>{ const d = new Date(m); d.setDate(m.getDate()+i); return iso(d); }); }
   const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  // Breaks of a saved entry, whatever version of the app saved it
+  function entryBreaks(en){
+    if (!en) return [];
+    if (Array.isArray(en.breaks)) return en.breaks.filter(validBreak).map(b => ({ s:b.s, e:b.e }));
+    if (TIME_RE.test(en.bStart) && TIME_RE.test(en.bEnd)) return [{ s:en.bStart, e:en.bEnd }];
+    return [];
+  }
 
   // ---------- haptics (native pickers already tick; this is for buttons) ----------
   function haptic(){
@@ -296,7 +293,7 @@
   const today = iso(new Date());
   let cur = today;
   let endIsDefault = false;   // end time was filled in by the app, not chosen
-  let hasBreak = false, bStartDef = false, bEndDef = false;
+  let brks = [];              // [{s, e, sDef, eDef, el}] — breaks being edited
 
   function lastEntry(){
     const keys = Object.keys(state.entries).sort();
@@ -306,29 +303,71 @@
     const d = new Date(); let m = d.getHours()*60 + d.getMinutes();
     m = Math.round(m/15)*15; return fromMin(m % 1440);
   }
+
+  // Minutes from shift start, so breaks sort and compare correctly even past midnight
+  const relTo = start => t => (toMin(t) - toMin(start) + 1440) % 1440;
+  function sortedBreaks(e){
+    const rel = relTo(e.start);
+    return (e.breaks||[]).slice().sort((a,b) => rel(a.s) - rel(b.s));
+  }
+
   function formEntry(){
     const e = { start:$("start").value, end:$("end").value, brk:0 };
-    if (hasBreak){
-      e.bStart = $("bStart").value; e.bEnd = $("bEnd").value;
-      if (TIME_RE.test(e.bStart) && TIME_RE.test(e.bEnd)) e.brk = between(e.bStart, e.bEnd);
+    if (brks.length){
+      e.breaks = brks.map(b => ({ s:b.s, e:b.e }));
+      if (e.breaks.every(validBreak)) e.brk = e.breaks.reduce((t,b) => t + between(b.s, b.e), 0);
+      if (TIME_RE.test(e.start) && e.breaks.every(validBreak)) e.breaks = sortedBreaks(e);
     }
     return e;
   }
-  const complete = e => TIME_RE.test(e.start) && TIME_RE.test(e.end)
-    && (e.bStart === undefined || (TIME_RE.test(e.bStart) && TIME_RE.test(e.bEnd)));
+  const complete = e => TIME_RE.test(e.start) && TIME_RE.test(e.end) && (!e.breaks || e.breaks.every(validBreak));
 
-  // Is the break inside the work hours?
-  function breakInside(e){
-    const s = toMin(e.start), L = between(e.start, e.end) || 1440;
-    const rel = t => (toMin(t) - s + 1440) % 1440;
-    const a = rel(e.bStart), b = rel(e.bEnd);
-    return a < b && b <= L;
+  function breakProblems(e){
+    const probs = [];
+    if (!e.breaks || !e.breaks.every(validBreak)) return probs;
+    const rel = relTo(e.start), L = between(e.start, e.end) || 1440;
+    const bs = sortedBreaks(e);
+    if (bs.some(b => !(rel(b.s) < rel(b.e) && rel(b.e) <= L)))
+      probs.push((bs.length > 1 ? "A break isn't" : "The break isn't") + " inside your work hours. Check the break times (and AM/PM).");
+    for (let i = 0; i < bs.length - 1; i++){
+      if (rel(bs[i].e) > rel(bs[i+1].s)) { probs.push("Your two breaks overlap. Check the break times."); break; }
+    }
+    return probs;
   }
 
-  function setBreak(on, bs, be, isDefault){
-    hasBreak = on;
-    $("bStart").value = on ? bs : ""; $("bEnd").value = on ? be : "";
-    bStartDef = bEndDef = !!(on && isDefault);
+  // ---------- break tiles (built only when breaks are added/removed, so an open wheel is never rebuilt) ----------
+  function buildBreaks(){
+    const box = $("breaks"); box.innerHTML = "";
+    brks.forEach((b, i) => {
+      const blk = document.createElement("div");
+      blk.className = "brkblock";
+      blk.innerHTML =
+        `<div class="grid2">
+           <label class="pick"><div class="lbl">Break start</div><div class="val"></div><input type="time" aria-label="Break ${i+1} start"></label>
+           <label class="pick"><div class="lbl">Break end</div><div class="val"></div><input type="time" aria-label="Break ${i+1} end"></label>
+         </div>
+         <div class="brkfoot"><span></span><button class="del" type="button">Remove</button></div>`;
+      const picks = blk.querySelectorAll(".pick"), ins = blk.querySelectorAll("input");
+      b.el = { sPick:picks[0], ePick:picks[1], sVal:picks[0].querySelector(".val"), eVal:picks[1].querySelector(".val"),
+               foot:blk.querySelector(".brkfoot span") };
+      ins[0].value = b.s; ins[1].value = b.e;
+      const wire = (input, key, defKey) => {
+        input.addEventListener("input", () => { b[key] = input.value; b[defKey] = false; render(); });
+        input.addEventListener("change", () => { b[key] = input.value; b[defKey] = false; saveCurrent(true); render(); });
+      };
+      wire(ins[0], "s", "sDef"); wire(ins[1], "e", "eDef");
+      blk.querySelector(".del").addEventListener("click", () => {
+        haptic();
+        brks.splice(brks.indexOf(b), 1);
+        buildBreaks();
+        if (state.entries[cur]) saveCurrent(true); else render();
+      });
+      box.appendChild(blk);
+    });
+  }
+  function setBreaks(list, isDefault){
+    brks = list.map(b => ({ s:b.s, e:b.e, sDef:!!isDefault, eDef:!!isDefault }));
+    buildBreaks();
   }
 
   function loadDate(s){
@@ -338,15 +377,16 @@
     if (e){
       $("start").value = e.start; $("end").value = e.end;
       endIsDefault = false;
-      if (e.bStart && e.bEnd) setBreak(true, e.bStart, e.bEnd, false);
-      else if (e.brk) setBreak(true, "12:00", fromMin(720 + e.brk), true);  // older duration-only break
-      else setBreak(false);
+      const list = entryBreaks(e);
+      if (list.length) setBreaks(list, false);
+      else if (e.brk) setBreaks([{ s:"12:00", e:fromMin(720 + e.brk) }], true);  // oldest duration-only break
+      else setBreaks([]);
     } else {
       const last = lastEntry();
       $("start").value = last ? last.start : "09:00";
       $("end").value = (s === today) ? nowRounded() : (last ? last.end : "17:00");
       endIsDefault = true;
-      setBreak(false);
+      setBreaks([]);
     }
     render();
   }
@@ -354,8 +394,8 @@
   function saveCurrent(quiet){
     const e = formEntry();
     if (!complete(e)) return false;
+    if (!e.breaks || !e.breaks.length) delete e.breaks;
     state.entries[cur] = e;
-    endIsDefault = false;
     if (persist() && !quiet) toast("Saved");
     render();
     return true;
@@ -377,12 +417,17 @@
     return weekDates(s).filter((d,i) => i < 5 && d < s && !state.entries[d]);
   }
 
+  function breakText(e){
+    const bs = e.breaks || [];
+    if (!bs.length || !state.settings.showBrk) return "";
+    return ` (${bs.map(b => `${fmtTime(b.s)}-${fmtTime(b.e)}`).join(", ")} break${bs.length > 1 ? "s" : ""})`;
+  }
+
   function message(){
     const e = formEntry();
     if (!complete(e)) return null;
     const day = worked(e), wk = weekTotalThrough(cur, true);
-    const brk = (e.brk && state.settings.showBrk) ? ` (${fmtDur(e.brk)} break)` : "";
-    return `${md(cur)} ${fmtTime(e.start)}-${fmtTime(e.end)}${brk} ${fmtDur(day)}\n${fmtDur(wk)} total for the week.`;
+    return `${md(cur)} ${fmtTime(e.start)}-${fmtTime(e.end)}${breakText(e)} ${fmtDur(day)}\n${fmtDur(wk)} total for the week.`;
   }
 
   function smsHref(body){
@@ -392,6 +437,8 @@
   }
 
   function dayName(s){ return DOW[(parseIso(s).getDay()+6)%7] + " " + md(s); }
+  const sameEntry = (a,b) => a && b && a.start===b.start && a.end===b.end
+    && JSON.stringify(entryBreaks(a)) === JSON.stringify(entryBreaks(b));
 
   function render(){
     const e = formEntry(), ok = complete(e);
@@ -403,27 +450,27 @@
     $("endVal").textContent = e.end ? fmtTime(e.end) : "—";
     $("endVal").classList.toggle("blank", !e.end);
     $("startPick").classList.toggle("attn", !e.start);
-    const endAttn = !e.end || endIsDefault;
-    $("endPick").classList.toggle("attn", endAttn);
+    $("endPick").classList.toggle("attn", !e.end || endIsDefault);
     $("endLbl").textContent = !e.end ? "End · set time" : (endIsDefault ? "End · check" : "End");
 
-    $("breakNone").hidden = hasBreak;
-    $("breakBox").hidden = !hasBreak;
-    if (hasBreak){
-      $("bStartVal").textContent = e.bStart ? fmtTime(e.bStart) : "—";
-      $("bStartVal").classList.toggle("blank", !e.bStart);
-      $("bEndVal").textContent = e.bEnd ? fmtTime(e.bEnd) : "—";
-      $("bEndVal").classList.toggle("blank", !e.bEnd);
-      $("bStartPick").classList.toggle("attn", !e.bStart || bStartDef);
-      $("bEndPick").classList.toggle("attn", !e.bEnd || bEndDef);
-      $("brkDur").textContent = e.brk ? `${fmtDur(e.brk)} unpaid` : "Set both break times";
-    }
+    // breaks
+    brks.forEach((b, i) => {
+      const el = b.el;
+      el.sVal.textContent = b.s ? fmtTime(b.s) : "—"; el.sVal.classList.toggle("blank", !b.s);
+      el.eVal.textContent = b.e ? fmtTime(b.e) : "—"; el.eVal.classList.toggle("blank", !b.e);
+      el.sPick.classList.toggle("attn", !b.s || b.sDef);
+      el.ePick.classList.toggle("attn", !b.e || b.eDef);
+      const name = brks.length > 1 ? `Break ${i+1}` : "Break";
+      el.foot.textContent = validBreak(b) ? `${name} · ${fmtDur(between(b.s, b.e))} unpaid` : `${name} · set both times`;
+    });
+    $("addRow").hidden = brks.length >= MAX_BREAKS;
+    $("addLbl").textContent = brks.length ? "Second break" : "Unpaid break";
+
     $("dayTot").textContent = ok ? fmtDur(worked(e)) : "—";
     $("weekTot").textContent = fmtDur(weekTotalThrough(cur, true));
 
     const saved = state.entries[cur];
-    const same = ok && saved && saved.start===e.start && saved.end===e.end && (saved.brk||0)===e.brk
-      && (saved.bStart||"")===(e.bStart||"") && (saved.bEnd||"")===(e.bEnd||"");
+    const same = ok && sameEntry(saved, e);
     $("status").textContent = same ? "✓ Logged" : "Not logged yet";
     $("status").className = "status" + (same ? " ok" : "");
     const m0 = monday(cur);
@@ -439,9 +486,9 @@
       const w = worked(e);
       if (crossesMidnight(e)) warns.push(`End is earlier than start, so this counts as working past midnight (${fmtDur(w)}). Check AM/PM.`);
       else if (w > LONG_DAY) warns.push(`That's ${fmtDur(w)} in one day. Check AM/PM.`);
-      if (hasBreak && !breakInside(e)) warns.push("The break isn't inside your work hours. Check the break times (and AM/PM).");
+      warns.push(...breakProblems(e));
     }
-    if (hasBreak && (bStartDef || bEndDef)) warns.push("Break times are placeholders. Set them to when you actually took it.");
+    if (brks.some(b => b.sDef || b.eDef)) warns.push("Break times in orange are placeholders. Set them to when you actually took the break.");
     if (endIsDefault && e.end && !saved) warns.push(cur === today
       ? "End time was filled in with the current time. Adjust it if you stopped earlier."
       : "End time was filled in from your last entry. Make sure it's right.");
@@ -464,7 +511,8 @@
       const isMissing = !en && i < 5 && s < today;
       const row = document.createElement("div");
       row.className = "row" + (en ? "" : " empty") + (isMissing ? " missing" : "") + (s === cur ? " sel" : "") + (!en && s > today ? " future" : "");
-      const tm = en ? fmtTime(en.start)+"–"+fmtTime(en.end)+(en.brk?" · "+fmtDur(en.brk)+" break":"") : (isMissing ? "Not logged" : "—");
+      const nb = en ? Math.max(entryBreaks(en).length, en.brk ? 1 : 0) : 0;
+      const tm = en ? fmtTime(en.start)+"–"+fmtTime(en.end)+(en.brk ? ` · ${fmtDur(en.brk)} break${nb > 1 ? "s" : ""}` : "") : (isMissing ? "Not logged" : "—");
       row.innerHTML = `<span class="d">${DOW[i]} ${md(s)}</span><span class="tm">${tm}</span><span class="h">${en ? fmtDur(worked(en)) : ""}</span>`;
       row.onclick = () => { haptic(); loadDate(s); };
       list.appendChild(row);
@@ -489,26 +537,21 @@
 
   // ---------- events ----------
   $("date").addEventListener("change", e => { if (e.target.value) loadDate(e.target.value); });
-  function touched(id){
-    if (id === "end") endIsDefault = false;
-    if (id === "bStart") bStartDef = false;
-    if (id === "bEnd") bEndDef = false;
-  }
-  ["start","end","bStart","bEnd"].forEach(id => {
-    $(id).addEventListener("input", () => { touched(id); render(); });
-    $(id).addEventListener("change", () => { touched(id); saveCurrent(true); render(); });
+  ["start","end"].forEach(id => {
+    $(id).addEventListener("input", () => { if (id === "end") endIsDefault = false; render(); });
+    $(id).addEventListener("change", () => { if (id === "end") endIsDefault = false; saveCurrent(true); render(); });
   });
 
   $("addBrk").addEventListener("click", () => {
+    if (brks.length >= MAX_BREAKS) return;
     haptic();
-    const prev = Object.keys(state.entries).sort().reverse().map(k => state.entries[k]).find(x => x.bStart && x.bEnd);
-    setBreak(true, prev ? prev.bStart : "12:00", prev ? prev.bEnd : "12:30", true);
+    const i = brks.length;
+    // Placeholder: the same break from your most recent day that had one, else 12–12:30 / 3–3:15
+    const prev = Object.keys(state.entries).sort().reverse().map(k => entryBreaks(state.entries[k])).find(l => l.length > i);
+    const def = prev ? prev[i] : (i === 0 ? { s:"12:00", e:"12:30" } : { s:"15:00", e:"15:15" });
+    brks.push({ s:def.s, e:def.e, sDef:true, eDef:true });
+    buildBreaks();
     render();
-  });
-  $("rmBrk").addEventListener("click", () => {
-    haptic();
-    setBreak(false);
-    if (state.entries[cur]) saveCurrent(true); else render();
   });
 
   $("copyBtn").addEventListener("click", async () => {
@@ -557,7 +600,7 @@
     persist(); $("sheet").classList.remove("open"); render();
   }
   function backupText(){
-    return `Hours backup ${md(today)}/${today.slice(0,4)}\n` + JSON.stringify({ v:1, entries: state.entries });
+    return `Hours backup ${md(today)}/${today.slice(0,4)}\n` + JSON.stringify({ v:2, entries: state.entries });
   }
   function parseBackup(txt){
     const i = txt.indexOf("{"), j = txt.lastIndexOf("}");
@@ -566,11 +609,11 @@
     const src = obj && obj.entries; if (!src || typeof src !== "object") return null;
     const clean = {};
     for (const [k,v] of Object.entries(src)){
-      if (DATE_RE.test(k) && v && TIME_RE.test(v.start) && TIME_RE.test(v.end)){
-        clean[k] = (TIME_RE.test(v.bStart) && TIME_RE.test(v.bEnd))
-          ? { start:v.start, end:v.end, brk: between(v.bStart, v.bEnd), bStart:v.bStart, bEnd:v.bEnd }
-          : { start:v.start, end:v.end, brk: Math.max(0, Math.min(600, +v.brk || 0)) };
-      }
+      if (!(DATE_RE.test(k) && v && TIME_RE.test(v.start) && TIME_RE.test(v.end))) continue;
+      const bs = entryBreaks(v).slice(0, MAX_BREAKS);
+      clean[k] = bs.length
+        ? { start:v.start, end:v.end, brk: bs.reduce((t,b) => t + between(b.s, b.e), 0), breaks: bs }
+        : { start:v.start, end:v.end, brk: Math.max(0, Math.min(600, +v.brk || 0)) };
     }
     return clean;
   }
