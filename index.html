@@ -15,7 +15,7 @@
 <style>
   :root{
     --bg:#0b0b0d; --card:#17171a; --card2:#1f1f23; --line:#2a2a2f;
-    --text:#f4f4f6; --muted:#8e8e96; --accent:#0a84ff; --green:#30d158; --red:#ff453a;
+    --text:#f4f4f6; --muted:#8e8e96; --accent:#0a84ff; --green:#30d158; --red:#ff453a; --orange:#ff9f0a;
     --r:20px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -38,6 +38,9 @@
   .pick .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
   .pick .val{font-size:30px;font-weight:600;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
   .pick:active{background:#29292e}
+  .pick.attn{box-shadow:inset 0 0 0 2px var(--orange)}
+  .pick.attn .lbl{color:var(--orange)}
+  .pick .val.blank{color:#4a4a52}
   .daterow{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
   .daterow .pick{padding:8px 14px}
   .daterow .pick .val{font-size:17px;margin:0}
@@ -53,45 +56,58 @@
   .tot .n{font-size:clamp(20px,6vw,25px);font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
   .tot .t{font-size:13px;color:var(--muted)}
 
+  .warn{display:none;background:rgba(255,159,10,.12);color:#ffb340;border-radius:12px;
+    padding:10px 12px;font-size:14px;line-height:1.4;margin-top:12px}
+  .warn.show{display:block}
+  .warn div+div{margin-top:6px}
+
   .bubblewrap{display:flex;justify-content:flex-end;margin:4px 0 14px}
   .bubble{background:var(--accent);color:#fff;border-radius:20px 20px 6px 20px;padding:10px 14px;
     font-size:16px;line-height:1.35;white-space:pre-wrap;max-width:88%;-webkit-user-select:text;user-select:text}
+  .bubble.blank{background:var(--card2);color:var(--muted)}
   .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .btn{border:0;border-radius:14px;padding:15px;font-size:17px;font-weight:600;cursor:pointer;
-    text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px}
+    text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit}
   .btn.primary{background:var(--accent);color:#fff}
   .btn.secondary{background:var(--card2);color:var(--text)}
   .btn:active{transform:scale(.98);opacity:.9}
+  .btn.disabled{opacity:.35;pointer-events:none}
 
   .week h2{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 6px;font-weight:600}
   .row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-top:1px solid var(--line);cursor:pointer}
   .row:first-of-type{border-top:0}
-  .row .d{font-weight:600;width:74px}
+  .row .d{font-weight:600;min-width:74px;margin-right:10px;white-space:nowrap}
   .row .tm{color:var(--muted);flex:1;font-size:14px}
   .row .h{font-variant-numeric:tabular-nums;font-weight:600}
   .row.empty .d,.row.empty .h{color:#4a4a52}
+  .row.missing .d,.row.missing .tm{color:var(--orange)}
   .row.sel .d{color:var(--accent)}
   .row.future{display:none}
-  .del{background:none;border:0;color:var(--muted);font-size:14px;padding:8px 0 0;cursor:pointer}
+  .del{background:none;border:0;color:var(--muted);font-size:14px;padding:8px 0 0;cursor:pointer;font-family:inherit}
   .del.armed{color:var(--red);font-weight:600}
 
   .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translate(-50%,30px);
     background:#2c2c31;color:#fff;padding:10px 16px;border-radius:999px;font-size:15px;font-weight:500;
-    opacity:0;transition:.25s;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+    opacity:0;transition:.25s;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.4);z-index:10;white-space:nowrap}
   .toast.show{opacity:1;transform:translate(-50%,0)}
 
   /* settings sheet */
   .sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;z-index:5}
   .sheet.open{display:flex}
   .panel{background:var(--card);width:100%;max-width:460px;margin:0 auto;border-radius:22px 22px 0 0;
-    padding:18px 18px calc(env(safe-area-inset-bottom) + 18px)}
+    padding:18px 18px calc(env(safe-area-inset-bottom) + 18px);max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .panel h3{margin:0 0 14px;font-size:20px}
+  .panel h4{margin:6px 0 4px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
   .field{margin-bottom:12px}
   .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-  .field input[type=text],.field input[type=tel]{width:100%;background:var(--card2);border:1px solid var(--line);
-    color:var(--text);border-radius:12px;padding:12px;font-size:17px;-webkit-user-select:text;user-select:text}
+  .field input[type=text],.field input[type=tel],.field textarea{width:100%;background:var(--card2);border:1px solid var(--line);
+    color:var(--text);border-radius:12px;padding:12px;font-size:16px;font-family:inherit;-webkit-user-select:text;user-select:text}
+  .field textarea{height:76px;resize:none;font-size:13px}
   .toggle{display:flex;align-items:center;justify-content:space-between;padding:6px 0 14px}
   .note{font-size:12px;color:var(--muted);line-height:1.4;margin-top:4px}
+  .btnrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+  .btnrow .btn{padding:12px;font-size:15px}
+  .divider{height:1px;background:var(--line);margin:14px 0}
   .hp{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
 </style>
 </head>
@@ -117,13 +133,13 @@
     </div>
 
     <div class="grid2">
-      <label class="pick">
+      <label class="pick" id="startPick">
         <div class="lbl">Start</div>
         <div class="val" id="startVal"></div>
         <input type="time" id="start" aria-label="Start time">
       </label>
-      <label class="pick">
-        <div class="lbl">End</div>
+      <label class="pick" id="endPick">
+        <div class="lbl" id="endLbl">End</div>
         <div class="val" id="endVal"></div>
         <input type="time" id="end" aria-label="End time">
       </label>
@@ -147,9 +163,11 @@
     </div>
 
     <div class="totals">
-      <div class="tot"><div class="n" id="dayTot"></div><div class="t">Today</div></div>
+      <div class="tot"><div class="n" id="dayTot"></div><div class="t">This day</div></div>
       <div class="tot"><div class="n" id="weekTot"></div><div class="t">Week through this day</div></div>
     </div>
+
+    <div class="warn" id="warn"></div>
   </div>
 
   <div class="bubblewrap"><div class="bubble" id="msg"></div></div>
@@ -188,6 +206,18 @@
       <span>Mention break in the text</span>
       <label style="position:relative"><input type="checkbox" id="showBrk" switch></label>
     </div>
+
+    <div class="divider"></div>
+    <h4>Backup</h4>
+    <div class="note" id="backupNote" style="margin-bottom:10px"></div>
+    <div class="btnrow">
+      <button class="btn secondary" id="backupBtn">Copy backup</button>
+      <button class="btn secondary" id="restoreBtn">Restore</button>
+    </div>
+    <div class="field">
+      <textarea id="restoreText" placeholder="To restore: paste a backup here, then tap Restore."></textarea>
+    </div>
+
     <button class="btn primary" id="closeSettings" style="width:100%">Done</button>
   </div>
 </div>
@@ -200,6 +230,7 @@
   "use strict";
   const $ = id => document.getElementById(id);
   const KEY = "hours.v1";
+  const LONG_DAY = 13 * 60;   // warn above this many minutes
 
   // ---------- storage (local to this phone) ----------
   function load(){
@@ -224,16 +255,19 @@
   }
   function fmtDur(m){
     const h = Math.floor(m/60), r = m%60, out = [];
-    if (h) out.push(h === 1 ? "1hr" : `${h}hrs`);
-    if (r || !h) out.push(`${r}min`);
     if (!h && !r) return "0hrs";
+    if (h) out.push(h === 1 ? "1hr" : `${h}hrs`);
+    if (r) out.push(`${r}min`);
     return out.join(" ");
   }
+  const crossesMidnight = e => toMin(e.end) <= toMin(e.start);
   function worked(e){
     let d = toMin(e.end) - toMin(e.start);
     if (d <= 0) d += 1440;            // past midnight
     return Math.max(0, d - (e.brk||0));
   }
+  const TIME_RE = /^\d{2}:\d{2}$/;
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
   const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   const parseIso = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
   const md = s => { const d = parseIso(s); return `${d.getMonth()+1}/${d.getDate()}`; };
@@ -251,6 +285,7 @@
   // ---------- form state ----------
   const today = iso(new Date());
   let cur = today;
+  let endIsDefault = false;   // end time was filled in by the app, not chosen
 
   function lastEntry(){
     const keys = Object.keys(state.entries).sort();
@@ -260,7 +295,8 @@
     const d = new Date(); let m = d.getHours()*60 + d.getMinutes();
     m = Math.round(m/15)*15; return fromMin(m % 1440);
   }
-  function formEntry(){ return { start:$("start").value || "09:00", end:$("end").value || "17:00", brk:+$("brk").value || 0 }; }
+  function formEntry(){ return { start:$("start").value, end:$("end").value, brk:+$("brk").value || 0 }; }
+  const complete = e => TIME_RE.test(e.start) && TIME_RE.test(e.end);
 
   function loadDate(s){
     cur = s;
@@ -268,33 +304,47 @@
     const e = state.entries[s];
     if (e){
       $("start").value = e.start; $("end").value = e.end; $("brk").value = String(e.brk||0);
+      endIsDefault = false;
     } else {
       const last = lastEntry();
       $("start").value = last ? last.start : "09:00";
       $("end").value = (s === today) ? nowRounded() : (last ? last.end : "17:00");
       $("brk").value = "0";
+      endIsDefault = true;
     }
     render();
   }
 
   function saveCurrent(quiet){
-    state.entries[cur] = formEntry();
+    const e = formEntry();
+    if (!complete(e)) return false;
+    state.entries[cur] = e;
+    endIsDefault = false;
     if (persist() && !quiet) toast("Saved");
     render();
+    return true;
   }
 
   function weekTotalThrough(s, includeForm){
     let total = 0;
+    const f = formEntry();
     for (const d of weekDates(s)){
       if (d > s) break;
-      if (d === s && includeForm) total += worked(formEntry());
+      if (d === s && includeForm) { if (complete(f)) total += worked(f); }
       else if (state.entries[d]) total += worked(state.entries[d]);
     }
     return total;
   }
 
+  // Weekdays (Mon–Fri) before the selected day, this week, with nothing logged
+  function missingDays(s){
+    return weekDates(s).filter((d,i) => i < 5 && d < s && !state.entries[d]);
+  }
+
   function message(){
-    const e = formEntry(), day = worked(e), wk = weekTotalThrough(cur, true);
+    const e = formEntry();
+    if (!complete(e)) return null;
+    const day = worked(e), wk = weekTotalThrough(cur, true);
     const brk = (e.brk && state.settings.showBrk) ? ` (${fmtDur(e.brk)} break)` : "";
     return `${md(cur)} ${fmtTime(e.start)}-${fmtTime(e.end)}${brk} ${fmtDur(day)}\n${fmtDur(wk)} total for the week.`;
   }
@@ -305,32 +355,68 @@
     return `sms:${num}${ios ? "&" : "?"}body=${encodeURIComponent(body)}`;
   }
 
+  function dayName(s){ return DOW[(parseIso(s).getDay()+6)%7] + " " + md(s); }
+
   function render(){
-    const e = formEntry();
+    const e = formEntry(), ok = complete(e);
     const d = parseIso(cur);
     $("dateVal").textContent = (cur === today ? "Today · " : "") + `${DOW[(d.getDay()+6)%7]}, ${MON[d.getMonth()]} ${d.getDate()}`;
-    $("startVal").textContent = fmtTime(e.start);
-    $("endVal").textContent = fmtTime(e.end);
+
+    $("startVal").textContent = e.start ? fmtTime(e.start) : "—";
+    $("startVal").classList.toggle("blank", !e.start);
+    $("endVal").textContent = e.end ? fmtTime(e.end) : "—";
+    $("endVal").classList.toggle("blank", !e.end);
+    $("startPick").classList.toggle("attn", !e.start);
+    const endAttn = !e.end || endIsDefault;
+    $("endPick").classList.toggle("attn", endAttn);
+    $("endLbl").textContent = !e.end ? "End · set time" : (endIsDefault ? "End · check" : "End");
+
     $("brkVal").textContent = e.brk ? fmtDur(e.brk) : "None";
-    $("dayTot").textContent = fmtDur(worked(e));
+    $("dayTot").textContent = ok ? fmtDur(worked(e)) : "—";
     $("weekTot").textContent = fmtDur(weekTotalThrough(cur, true));
+
     const saved = state.entries[cur];
-    const same = saved && saved.start===e.start && saved.end===e.end && (saved.brk||0)===e.brk;
+    const same = ok && saved && saved.start===e.start && saved.end===e.end && (saved.brk||0)===e.brk;
     $("status").textContent = same ? "✓ Logged" : "Not logged yet";
     $("status").className = "status" + (same ? " ok" : "");
     const m0 = monday(cur);
     $("weekLabel").textContent = `Week of ${MON[m0.getMonth()]} ${m0.getDate()}`;
+
+    // warnings
+    const warns = [];
+    const miss = missingDays(cur);
+    if (miss.length){
+      warns.push(`Nothing logged for ${miss.map(dayName).join(", ")}. The week total doesn't include ${miss.length > 1 ? "those days" : "that day"}.`);
+    }
+    if (ok){
+      const w = worked(e);
+      if (crossesMidnight(e)) warns.push(`End is earlier than start, so this counts as working past midnight (${fmtDur(w)}). Check AM/PM.`);
+      else if (w > LONG_DAY) warns.push(`That's ${fmtDur(w)} in one day. Check AM/PM.`);
+    }
+    if (endIsDefault && e.end && !saved) warns.push(cur === today
+      ? "End time was filled in with the current time. Adjust it if you stopped earlier."
+      : "End time was filled in from your last entry. Make sure it's right.");
+    $("warn").innerHTML = warns.map(w => `<div>⚠︎ ${w}</div>`).join("");
+    $("warn").classList.toggle("show", warns.length > 0);
+
+    // message + buttons
     const msg = message();
-    $("msg").textContent = msg;
-    $("textBtn").href = smsHref(msg);
+    $("msg").textContent = msg || "Set a start and end time.";
+    $("msg").classList.toggle("blank", !msg);
+    $("copyBtn").classList.toggle("disabled", !msg);
+    $("textBtn").classList.toggle("disabled", !msg);
+    $("textBtn").href = msg ? smsHref(msg) : "#";
     $("textLbl").textContent = state.settings.name ? `Text ${state.settings.name}` : "Text";
 
+    // week list
     const list = $("weekList"); list.innerHTML = "";
     weekDates(cur).forEach((s,i)=>{
       const en = state.entries[s];
+      const isMissing = !en && i < 5 && s < today;
       const row = document.createElement("div");
-      row.className = "row" + (en ? "" : " empty") + (s === cur ? " sel" : "") + (!en && s > today ? " future" : "");
-      row.innerHTML = `<span class="d">${DOW[i]} ${md(s)}</span><span class="tm">${en ? fmtTime(en.start)+"–"+fmtTime(en.end)+(en.brk?" · "+fmtDur(en.brk)+" break":"") : "—"}</span><span class="h">${en ? fmtDur(worked(en)) : ""}</span>`;
+      row.className = "row" + (en ? "" : " empty") + (isMissing ? " missing" : "") + (s === cur ? " sel" : "") + (!en && s > today ? " future" : "");
+      const tm = en ? fmtTime(en.start)+"–"+fmtTime(en.end)+(en.brk?" · "+fmtDur(en.brk)+" break":"") : (isMissing ? "Not logged" : "—");
+      row.innerHTML = `<span class="d">${DOW[i]} ${md(s)}</span><span class="tm">${tm}</span><span class="h">${en ? fmtDur(worked(en)) : ""}</span>`;
       row.onclick = () => { haptic(); loadDate(s); };
       list.appendChild(row);
     });
@@ -339,31 +425,39 @@
 
   // ---------- toast ----------
   let tt;
-  function toast(t){ const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(tt); tt = setTimeout(()=>el.classList.remove("show"), 1600); }
+  function toast(t){ const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(tt); tt = setTimeout(()=>el.classList.remove("show"), 1800); }
+
+  async function copyText(txt, fallbackEl){
+    try { await navigator.clipboard.writeText(txt); return true; }
+    catch(e){
+      if (fallbackEl){
+        const r = document.createRange(); r.selectNodeContents(fallbackEl);
+        const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      }
+      return false;
+    }
+  }
 
   // ---------- events ----------
   $("date").addEventListener("change", e => { if (e.target.value) loadDate(e.target.value); });
   ["start","end","brk"].forEach(id => {
-    $(id).addEventListener("input", () => render());
-    $(id).addEventListener("change", () => { if ($(id).value !== "") saveCurrent(true); });
+    $(id).addEventListener("input", () => { if (id === "end") endIsDefault = false; render(); });
+    $(id).addEventListener("change", () => { if (id === "end") endIsDefault = false; saveCurrent(true); });
   });
 
   $("copyBtn").addEventListener("click", async () => {
+    const txt = message(); if (!txt) return;
     haptic(); saveCurrent(true);
-    const txt = message();
-    try { await navigator.clipboard.writeText(txt); toast("Copied — paste into your text"); }
-    catch(e){
-      const r = document.createRange(); r.selectNodeContents($("msg"));
-      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
-      toast("Selected — tap Copy");
-    }
+    toast(await copyText(txt, $("msg")) ? "Copied — paste into your text" : "Selected — tap Copy");
   });
 
   $("textBtn").addEventListener("click", ev => {
+    const txt = message();
+    if (!txt){ ev.preventDefault(); return; }
     haptic();
     if (!state.settings.phone){ ev.preventDefault(); openSettings(); toast("Add your client's number first"); return; }
     saveCurrent(true);
-    $("textBtn").href = smsHref(message());
+    $("textBtn").href = smsHref(txt);
   });
 
   let armT;
@@ -378,8 +472,16 @@
     delete state.entries[cur]; persist(); haptic(); toast("Deleted"); loadDate(cur);
   });
 
+  // ---------- settings + backup ----------
+  function backupNote(){
+    const keys = Object.keys(state.entries).sort();
+    $("backupNote").textContent = keys.length
+      ? `${keys.length} day${keys.length>1?"s":""} saved on this phone (${md(keys[0])} – ${md(keys[keys.length-1])}). Copy a backup into Notes now and then; restore it here if you ever reinstall or switch phones.`
+      : "Nothing logged yet. Once you have hours saved, copy a backup into Notes now and then.";
+  }
   function openSettings(){
     $("cName").value = state.settings.name; $("cPhone").value = state.settings.phone; $("showBrk").checked = !!state.settings.showBrk;
+    $("restoreText").value = ""; backupNote();
     $("sheet").classList.add("open");
   }
   function closeSettings(){
@@ -388,20 +490,52 @@
     state.settings.showBrk = $("showBrk").checked;
     persist(); $("sheet").classList.remove("open"); render();
   }
+  function backupText(){
+    return `Hours backup ${md(today)}/${today.slice(0,4)}\n` + JSON.stringify({ v:1, entries: state.entries });
+  }
+  function parseBackup(txt){
+    const i = txt.indexOf("{"), j = txt.lastIndexOf("}");
+    if (i < 0 || j < i) return null;
+    let obj; try { obj = JSON.parse(txt.slice(i, j+1)); } catch(e){ return null; }
+    const src = obj && obj.entries; if (!src || typeof src !== "object") return null;
+    const clean = {};
+    for (const [k,v] of Object.entries(src)){
+      if (DATE_RE.test(k) && v && TIME_RE.test(v.start) && TIME_RE.test(v.end)){
+        clean[k] = { start:v.start, end:v.end, brk: Math.max(0, Math.min(600, +v.brk || 0)) };
+      }
+    }
+    return clean;
+  }
+
+  $("backupBtn").addEventListener("click", async () => {
+    haptic();
+    if (!Object.keys(state.entries).length){ toast("Nothing to back up yet"); return; }
+    const txt = backupText();
+    if (await copyText(txt)) toast("Backup copied — paste it into Notes");
+    else { $("restoreText").value = txt; $("restoreText").select(); toast("Selected — tap Copy"); }
+  });
+  $("restoreBtn").addEventListener("click", () => {
+    haptic();
+    const raw = $("restoreText").value.trim();
+    if (!raw){ toast("Paste a backup into the box first"); $("restoreText").focus(); return; }
+    const entries = parseBackup(raw);
+    const n = entries ? Object.keys(entries).length : 0;
+    if (!n){ toast("That doesn't look like a backup"); return; }
+    Object.assign(state.entries, entries);
+    if (persist()){ toast(`Restored ${n} day${n>1?"s":""}`); $("restoreText").value = ""; backupNote(); loadDate(cur); }
+  });
+
   $("openSettings").addEventListener("click", () => { haptic(); openSettings(); });
   $("closeSettings").addEventListener("click", () => { haptic(); closeSettings(); });
   $("sheet").addEventListener("click", e => { if (e.target === $("sheet")) closeSettings(); });
 
   // Re-sync "today" when the app is reopened on a new day
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible"){
-      const t = iso(new Date());
-      if (t !== today) location.reload();
-    }
+    if (document.visibilityState === "visible" && iso(new Date()) !== today) location.reload();
   });
 
-  // expose pure helpers for testing
-  window.__hours = { fmtTime, fmtDur, worked, weekDates, message, state, loadDate };
+  // exposed for testing
+  window.__hours = { fmtTime, fmtDur, worked, weekDates, message, state, loadDate, parseBackup, backupText };
 
   loadDate(today);
   if ("serviceWorker" in navigator && location.protocol === "https:") {
