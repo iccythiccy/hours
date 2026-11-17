@@ -60,6 +60,28 @@ Everything is stored **on the phone**, inside the home-screen app (browser local
 - When releasing: bump `VERSION`/`UPDATED` in `index.html` (shown at the bottom of Settings), and bump the cache name in `sw.js`.
 - Saved data is backward compatible: older entry formats (duration-only breaks, single `bStart`/`bEnd` breaks) still load, and older "texted" records (stored as text before Nov 11, 2026) are converted to data on first open.
 
+## iPhone app
+
+A native version lives in `ios/` (SwiftUI, iOS 17+). It runs the same `core.js` through JavaScriptCore, so the hours math and text wording always match the web app. Change `core.js`, not Swift, for any hours rule.
+
+**Build and install** (Xcode 16+, phone plugged in, signed in to your Apple ID in Xcode → Settings → Accounts):
+
+1. Open `ios/Hours.xcodeproj`, choose the **Hours** scheme and your iPhone, and press Run. Signing is automatic (team set in the project).
+2. First install only: on the phone, open **Settings → General → VPN & Device Management**, tap your developer profile and **Trust** it. On iOS 16+ also turn on **Settings → Privacy & Security → Developer Mode**.
+
+From the command line:
+
+```
+cd ios
+xcodebuild -project Hours.xcodeproj -scheme Hours -destination 'id=<device UDID>' -derivedDataPath build -allowProvisioningUpdates build
+xcrun devicectl device install app --device <device UDID> build/Build/Products/Debug-iphoneos/Hours.app
+xcodebuild -project Hours.xcodeproj -scheme Hours -destination 'platform=iOS Simulator,name=<simulator>' test   # HoursTests
+```
+
+**Moving your data over:** in the web app, Settings → **Copy backup**. In the iPhone app, Settings → paste it into the box → **Restore**.
+
+**Widgets:** long-press the Home Screen → **Edit → Add Widget → Hours**. The medium size has **Start** and **End** buttons; the small size shows today and the week total. For the Lock Screen, long-press it → **Customize → Lock Screen**, tap the widget area and add **Hours** (rectangular or the inline line above the clock). The app and widgets share data through the App Group `group.tv.firman.hours`.
+
 ## Tests
 
 Run both before every push; don't push if either fails.

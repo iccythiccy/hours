@@ -19,7 +19,8 @@ enum ShiftActions {
         var s = Store.load()
         let today = Clock.iso(now)
         guard s.entries[today] == nil else { return false }
-        s.drafts?[today] = Draft(start: Clock.hhmm(now), breaks: s.drafts?[today]?.breaks)
+        let breaks = s.drafts?[today]?.breaks
+        s.drafts?[today] = Draft(start: Clock.hhmm(now), breaks: breaks)
         return Store.save(s)
     }
 
