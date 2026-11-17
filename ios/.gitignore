@@ -1,0 +1,6 @@
+Local.xcconfig
+Hours.xcodeproj/
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
