@@ -82,6 +82,8 @@ xcodebuild -project Hours.xcodeproj -scheme Hours -destination 'platform=iOS Sim
 
 **Widgets:** long-press the Home Screen → **Edit → Add Widget → Hours**. The medium size has **Start** and **End** buttons; the small size shows today and the week total. For the Lock Screen, long-press it → **Customize → Lock Screen**, tap the widget area and add **Hours** (rectangular or the inline line above the clock). The app and widgets share data through the App Group `group.tv.firman.hours`.
 
+**Up Next (Smart Stack):** a second widget, small or medium, made for a Smart Stack. It shows only the next step. Before work it says "Ready" with your usual start time and a **Start** button. While you're clocked in it shows a live clock, a progress bar toward your usual finish and an **End** button. Once the day is logged and the text hasn't gone out, it shows a preview of the text line and a **Text** button. When everything is sent, it shows the week as Mon–Sun bars. It tells iOS when it matters, so with Smart Rotate on it rises to the top around your usual start time, near your usual finish, and while a text is waiting. It stays low on days off and weekends. "Usual" times come from the last four weeks of logged days. To set it up, drag **Up Next** onto a Smart Stack, or add it and drag it onto another widget to make one.
+
 ## Tests
 
 Run both before every push; don't push if either fails.

@@ -203,5 +203,8 @@ struct HoursWidget: Widget {
 
 @main
 struct HoursWidgetBundle: WidgetBundle {
-    var body: some Widget { HoursWidget() }
+    var body: some Widget {
+        HoursWidget()
+        HoursStackWidget()
+    }
 }
